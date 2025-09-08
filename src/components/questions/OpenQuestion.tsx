@@ -656,7 +656,7 @@ export function OpenQuestion({
 
   {/* Persistent reference + user answer block (including during self-assessment) */}
   {(() => {
-    const canShowReference = submitted && expectedReference && (!hideImmediateResults || showSelfAssessment || assessmentCompleted || showDeferredSelfAssessment);
+    const canShowReference = submitted && expectedReference && (!hideImmediateResults || (showSelfAssessment && showDeferredSelfAssessment) || assessmentCompleted);
     if (!canShowReference) return null;
     return (
       <div className="mt-3">

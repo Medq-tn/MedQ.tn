@@ -58,6 +58,10 @@ export function ClinicalCaseQuestion({
   const [isTogglingHidden, setIsTogglingHidden] = useState(false);
   const [showNotesArea, setShowNotesArea] = useState(false);
   const [notesHasContent, setNotesHasContent] = useState(false); // track if notes have content
+  // Evaluation phase state (after submission)
+  const [evaluationOrder, setEvaluationOrder] = useState<string[]>([]); // ordered list of open question ids needing evaluation
+  const [evaluationIndex, setEvaluationIndex] = useState<number>(0); // current evaluation pointer
+  const [evaluationComplete, setEvaluationComplete] = useState<boolean>(false);
 
   // Auto-close notes when content becomes empty
   useEffect(() => {
@@ -172,13 +176,50 @@ export function ClinicalCaseQuestion({
     }
   };
 
+  // Utility: focus first input of a question
+  const focusFirstInput = (questionId: string) => {
+    const element = questionRefs.current[questionId];
+    if (!element) return;
+    
+    // Try multiple selectors to find the first input
+    const selectors = [
+      'input[type="radio"]:not(:disabled)',
+      'textarea:not(:disabled)',
+      'input:not(:disabled)',
+      'button:not(:disabled)'
+    ];
+    
+    for (const selector of selectors) {
+      const firstInput = element.querySelector(selector) as HTMLElement;
+      if (firstInput) {
+        firstInput.focus();
+        return;
+      }
+    }
+  };
+
+  // On mount (or case change) focus first question
+  useEffect(() => {
+    if (clinicalCase.questions.length > 0 && !showResults) {
+      // Find first unanswered question
+      const firstUnanswered = clinicalCase.questions.find(q => answers[q.id] === undefined);
+      const targetId = firstUnanswered?.id || clinicalCase.questions[0].id;
+      
+      // Scroll to first unanswered question and focus it
+      setTimeout(() => {
+        const element = questionRefs.current[targetId];
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => focusFirstInput(targetId), 100);
+        }
+      }, 100);
+    }
+  }, [clinicalCase.caseNumber, showResults]);
+
   const handleQuestionAnswer = (questionId: string, answer: any, result?: boolean | 'partial') => {
     const wasAnswered = answers[questionId] !== undefined;
     setAnswers(prev => {
       const newAnswers = { ...prev, [questionId]: answer };
-      if (!wasAnswered && !showResults) {
-        setTimeout(() => scrollToNextQuestion(questionId, newAnswers), 300);
-      }
       return newAnswers;
     });
     if (result !== undefined) {
@@ -188,8 +229,29 @@ export function ClinicalCaseQuestion({
 
   const handleCompleteCase = () => {
     setIsCaseComplete(true);
-    setShowResults(true); // Automatically show results after submission
-    onSubmit(clinicalCase.caseNumber, answers, questionResults);
+    setShowResults(true); // enter evaluation phase (results visible)
+    // Build evaluation order (only open questions that require self assessment)
+    const openIds = clinicalCase.questions
+      .filter(q => q.type === 'clinic_croq')
+      .map(q => q.id);
+    setEvaluationOrder(openIds);
+    setEvaluationIndex(0);
+    setEvaluationComplete(openIds.length === 0); // if no open questions, evaluation instantly complete
+    onSubmit(clinicalCase.caseNumber, answers, questionResults); // results will be updated as user evaluates
+    
+    // Scroll to first evaluation question after a brief delay, or to top if no evaluation needed
+    setTimeout(() => {
+      if (openIds.length > 0) {
+        const firstEvalId = openIds[0];
+        const element = questionRefs.current[firstEvalId];
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        // If no evaluation needed, scroll to top of case
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 300);
   };
   const handleShowResults = () => setShowResults(true);
   const handleSelfAssessmentUpdate = (questionId: string, result: boolean | 'partial') => {
@@ -198,61 +260,100 @@ export function ClinicalCaseQuestion({
       const userAnswer = answers[questionId];
       onAnswerUpdate(questionId, userAnswer, result);
     }
-  };
-
-  // Add keyboard navigation for Enter key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        const target = e.target as HTMLElement;
-        
-        // If it's a textarea (QROC answer), submit the current question
-        if (target.tagName === 'TEXTAREA') {
-          e.preventDefault();
-          const questionCard = target.closest('[data-question-id]');
-          if (questionCard) {
-            const questionId = questionCard.getAttribute('data-question-id');
-            if (questionId && answers[questionId] !== undefined) {
-              // Move to next unanswered question or trigger completion
-              const nextUnanswered = clinicalCase.questions.find(q => answers[q.id] === undefined);
-              if (nextUnanswered) {
-                const element = questionRefs.current[nextUnanswered.id];
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  setTimeout(() => {
-                    const firstInput = element.querySelector('input[type="radio"], textarea') as HTMLElement;
-                    if (firstInput) firstInput.focus();
-                  }, 300);
-                }
-              } else if (answeredQuestions === clinicalCase.totalQuestions && !isCaseComplete) {
-                // All questions answered, trigger completion
-                handleCompleteCase();
-              }
-            }
+    if (showResults && !evaluationComplete) {
+      const currentId = evaluationOrder[evaluationIndex];
+      if (currentId === questionId) {
+        // Advance to next unanswered
+        for (let i = evaluationIndex + 1; i < evaluationOrder.length; i++) {
+          const id = evaluationOrder[i];
+          if (id !== questionId && questionResults[id] === undefined) {
+            setEvaluationIndex(i);
+            return;
           }
         }
-        
-        // Handle workflow buttons
-        if (answeredQuestions === clinicalCase.totalQuestions && !isCaseComplete) {
-          handleCompleteCase();
-        } else if (isCaseComplete && !showResults) {
-          handleShowResults();
-        } else if (isCaseComplete && showResults) {
+        // If none left after this update, mark complete
+        const remaining = evaluationOrder.filter(id => id !== questionId && questionResults[id] === undefined);
+        if (remaining.length === 0) setEvaluationComplete(true);
+      }
+    }
+  };
+
+  // Scroll to current evaluation question when evaluation index changes
+  useEffect(() => {
+    if (!showResults || evaluationComplete) return;
+    const currentEvalId = evaluationOrder[evaluationIndex];
+    if (!currentEvalId) return;
+    const element = questionRefs.current[currentEvalId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Focus nothing specific to avoid accidental typing; user uses 1/2/3
+    }
+  }, [evaluationIndex, evaluationOrder, showResults, evaluationComplete]);
+
+  // Keyboard navigation: Answer phase (Enter to advance), Evaluation phase (1/2/3 to grade, Enter after all graded)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Evaluation phase key handling
+      if (showResults && !evaluationComplete) {
+        // Only number keys 1/2/3 valid for evaluation
+        if (["1", "2", "3"].includes(e.key)) {
+          const currentEvalId = evaluationOrder[evaluationIndex];
+          if (currentEvalId) {
+            e.preventDefault();
+            const mapping: Record<string, boolean | 'partial'> = { '1': true, '2': 'partial', '3': false };
+            handleSelfAssessmentUpdate(currentEvalId, mapping[e.key]);
+          }
+        } else if (e.key === 'Enter') {
+          // Enter disabled during evaluation selection
+          e.preventDefault();
+        }
+        return; // stop further processing during evaluation phase
+      }
+
+      // After evaluation complete & results shown: Enter -> next case
+      if (showResults && evaluationComplete) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
           onNext();
         }
+        return;
       }
-    };
 
-    document.addEventListener('keydown', handleKeyDown);
+      // Answering phase
+      if (!showResults && e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        
+        // If all questions answered, submit
+        if (answeredQuestions === clinicalCase.totalQuestions) {
+          handleCompleteCase();
+          return;
+        }
+        
+        // Find next unanswered question in order
+        const nextUnanswered = clinicalCase.questions.find(q => answers[q.id] === undefined);
+        
+        if (nextUnanswered) {
+          const element = questionRefs.current[nextUnanswered.id];
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => focusFirstInput(nextUnanswered.id), 300);
+          }
+        } else if (answeredQuestions === clinicalCase.totalQuestions) {
+          // Fallback: if somehow all are answered, submit
+          handleCompleteCase();
+        }
+      }
+    };    document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [answers, answeredQuestions, isCaseComplete, showResults, clinicalCase.questions, clinicalCase.totalQuestions, handleCompleteCase, handleShowResults, onNext]);
+  }, [answers, answeredQuestions, isCaseComplete, showResults, evaluationOrder, evaluationIndex, evaluationComplete, clinicalCase.questions, clinicalCase.totalQuestions]);
   const getQuestionStatus = (question: Question) => {
     if (answers[question.id] !== undefined) {
       if (showResults) {
         const result = questionResults[question.id];
         if (result === true) return 'correct';
         if (result === 'partial') return 'partial';
-        return 'incorrect';
+        if (result === false) return 'incorrect';
+        return 'pending'; // awaiting evaluation
       }
       return 'answered';
     }
@@ -262,14 +363,47 @@ export function ClinicalCaseQuestion({
     const isAnsweredQ = answers[question.id] !== undefined;
     const answerResultQ = showResults ? questionResults[question.id] : undefined;
     const userAnswerQ = answers[question.id];
+    const isCurrentEvaluationTarget = showResults && !evaluationComplete && evaluationOrder[evaluationIndex] === question.id;
+    const hasEvaluation = showResults && question.type === 'clinic_croq' && questionResults[question.id] !== undefined;
+    
+    // Check if this is the next question to answer (first unanswered)
+    const isNextToAnswer = !showResults && !isAnsweredQ && 
+      clinicalCase.questions.findIndex(q => answers[q.id] === undefined) === 
+      clinicalCase.questions.findIndex(q => q.id === question.id);
+    
+    const evaluationLabel = hasEvaluation
+      ? questionResults[question.id] === true
+        ? 'Correct'
+        : questionResults[question.id] === 'partial'
+          ? 'Partiel'
+          : 'Incorrect'
+      : undefined;
+    const evaluationColor = hasEvaluation
+      ? questionResults[question.id] === true
+        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+        : questionResults[question.id] === 'partial'
+          ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      : 'bg-muted text-muted-foreground';
     return (
-      <div key={question.id} ref={el => { questionRefs.current[question.id] = el; }} className="border rounded-xl p-3 bg-card shadow-sm" data-question-id={question.id}>
+      <div
+        key={question.id}
+        ref={el => { questionRefs.current[question.id] = el; }}
+        className={`border rounded-xl p-3 bg-card shadow-sm transition-all duration-200 ${
+          isCurrentEvaluationTarget ? 'ring-2 ring-blue-500 shadow-md' : 
+          isNextToAnswer ? 'ring-2 ring-orange-500 shadow-md' : ''
+        }`}
+        data-question-id={question.id}
+      >
         <div className="flex items-center mb-2">
           <span
             className={
               'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold tracking-wide ' +
-              (isAnsweredQ
-                ? showResults
+              (!showResults
+                ? (isAnsweredQ ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 
+                   isNextToAnswer ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' :
+                   'bg-muted text-muted-foreground')
+                : isAnsweredQ
                   ? answerResultQ === true
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                     : answerResultQ === 'partial'
@@ -277,11 +411,10 @@ export function ClinicalCaseQuestion({
                       : answerResultQ === false
                         ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                         : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                : 'bg-muted text-muted-foreground')
+                  : 'bg-muted text-muted-foreground')
             }
           >
-            Question {index + 1}
+            Question {index + 1} {isNextToAnswer && !showResults && '(Suivante)'}
           </span>
           {isAnsweredQ && (
             <span className="ml-auto inline-flex items-center">
@@ -297,7 +430,21 @@ export function ClinicalCaseQuestion({
             </span>
           )}
         </div>
-        {question.type === 'clinic_mcq' ? (
+        {showResults && question.type === 'clinic_croq' && (
+          <div className="mb-2 flex items-center gap-2 text-xs">
+            {isCurrentEvaluationTarget && !hasEvaluation && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 font-medium">
+                Évaluer (1=Correct 2=Partiel 3=Incorrect)
+              </span>
+            )}
+            {hasEvaluation && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium ${evaluationColor}`}>
+                {evaluationLabel}
+              </span>
+            )}
+          </div>
+        )}
+  {question.type === 'clinic_mcq' ? (
           <MCQQuestion
             question={question}
             onSubmit={(answer, isCorrect) => handleQuestionAnswer(question.id, answer, isCorrect)}
@@ -323,9 +470,8 @@ export function ClinicalCaseQuestion({
             question={question}
             onSubmit={(answer, resultValue) => handleQuestionAnswer(question.id, answer, resultValue)}
             onAnswerChange={(answer, hasAnswer) => {
-              // For QROC questions, we call handleQuestionAnswer with answer and placeholder result
-              // The actual result will be determined during self-assessment
-              handleQuestionAnswer(question.id, answer, 'partial');
+              // Record answer only (no provisional result). Evaluation happens later.
+              handleQuestionAnswer(question.id, answer);
             }}
             onNext={() => {}}
             lectureId={lectureId}
@@ -335,7 +481,7 @@ export function ClinicalCaseQuestion({
             answerResult={showResults ? answerResultQ : undefined}
             userAnswer={userAnswerQ as any}
             hideImmediateResults={!showResults}
-            showDeferredSelfAssessment={showResults && isAnsweredQ && question.type === 'clinic_croq'}
+            showDeferredSelfAssessment={showResults && question.type === 'clinic_croq'}
             onSelfAssessmentUpdate={handleSelfAssessmentUpdate}
             hideNotes={!showResults}
             hideComments={true} // Always hide individual question comments in clinical cases
@@ -363,8 +509,8 @@ export function ClinicalCaseQuestion({
               const session = firstQuestion?.session;
               const parts: string[] = ['Cas Clinique', `${clinicalCase.caseNumber}`];
               if (session) {
-                const hasWord = /session/i.test(session);
-                parts.push(hasWord ? session : `Session ${session}`);
+                {showResults && !evaluationComplete && `Phase d'évaluation (${evaluationOrder.filter(id => questionResults[id] !== undefined).length}/${evaluationOrder.length}) - 1=Correct 2=Partiel 3=Incorrect`}
+                {showResults && evaluationComplete && 'Évaluation terminée - Entrée pour continuer'}
               }
               return (
                 <div className="flex items-center gap-2 text-sm sm:text-base font-semibold text-foreground dark:text-gray-100">
@@ -460,18 +606,37 @@ export function ClinicalCaseQuestion({
       <Card>
         <CardContent>
           <div className="space-y-6 mt-6">
-            {clinicalCase.questions.map((question, index) => renderQuestion(question, index))}
+            {clinicalCase.questions.map((question, index) => {
+              const isCurrentEval = showResults && !evaluationComplete && question.type === 'clinic_croq' && evaluationOrder[evaluationIndex] === question.id;
+              return (
+                <div key={question.id} className={isCurrentEval ? 'ring-2 ring-blue-500 rounded-lg transition-shadow' : ''}>
+                  {renderQuestion(question, index)}
+                  {showResults && question.type === 'clinic_croq' && questionResults[question.id] !== undefined && (
+                    <div className="mt-2 text-xs font-medium text-muted-foreground">
+                      Votre évaluation: {questionResults[question.id] === true ? 'Correct' : questionResults[question.id] === 'partial' ? 'Partiel' : 'Incorrect'}
+                    </div>
+                  )}
+                  {isCurrentEval && (
+                    <div className="mt-2 text-[11px] text-blue-600 dark:text-blue-300 font-medium flex gap-3 flex-wrap">
+                      <span>1 = Correct</span>
+                      <span>2 = Partiel</span>
+                      <span>3 = Incorrect</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="mt-8 space-y-4">
             
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-wrap">
               {/* Progress / status */}
               <div className="text-sm text-muted-foreground">
-                {showResults
-                  ? 'Résultats affichés - Continuer'
-                  : answeredQuestions === clinicalCase.totalQuestions
-                    ? 'Toutes les questions répondues - Soumettre la réponse'
-                    : `${clinicalCase.totalQuestions - answeredQuestions} question(s) restante(s)`}
+                {!showResults && (answeredQuestions === clinicalCase.totalQuestions
+                  ? 'Toutes les réponses saisies - Appuyez sur Entrée pour soumettre'
+                  : `${clinicalCase.totalQuestions - answeredQuestions} question(s) restante(s) - Répondez puis appuyez sur Entrée`)}
+                {showResults && !evaluationComplete && `Phase d'évaluation: ${evaluationOrder.filter(id => questionResults[id] !== undefined).length}/${evaluationOrder.length} évaluées (1 Correct • 2 Partiel • 3 Incorrect)`}
+                {showResults && evaluationComplete && 'Évaluation terminée - Entrée pour continuer'}
               </div>
 
               <div className="flex gap-2 flex-wrap justify-end items-center">
@@ -488,7 +653,7 @@ export function ClinicalCaseQuestion({
                 )}
 
                 {/* Notes + reset + next buttons after results */}
-                {isCaseComplete && showResults && (
+                {isCaseComplete && showResults && evaluationComplete && (
                   <>
                     <Button
                       variant="outline"
