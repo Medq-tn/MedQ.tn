@@ -15,24 +15,61 @@ interface OpenQuestionHeaderProps {
 
 export function OpenQuestionHeader({ questionText, questionNumber, session, lectureTitle, specialtyName, questionId, highlightConfirm, hideMeta }: OpenQuestionHeaderProps) {
   const { t } = useTranslation();
-  const typeLabel = 'QROC'; // Fixed label instead of translation
-  const sessionLabel = (() => {
-    if (!session) return '';
-    const hasWord = /session/i.test(session);
-    return hasWord ? session : `Session ${session}`;
-  })();
-  const firstLineParts: string[] = [];
-  firstLineParts.push(typeLabel);
-  if (questionNumber !== undefined) firstLineParts.push(`Question ${questionNumber}`);
-  if (session) firstLineParts.push(sessionLabel);
-  const firstLine = firstLineParts.join(' / ');
+  
+  // Enhanced session formatting to preserve full session information
+  const formatSession = (sessionValue?: string) => {
+    if (!sessionValue) return '';
+    
+    // Clean up parentheses and extra spaces
+    let cleaned = sessionValue.replace(/^\(|\)$/g, '').trim();
+    
+    // If already contains "Session", use as-is
+    if (/session/i.test(cleaned)) return cleaned;
+    
+    // If it's just a number or year, format as "Session X"
+    if (/^\d+$/.test(cleaned)) return `Session ${cleaned}`;
+    
+    // If it contains "theme" or other descriptive text, use as-is
+    if (/theme|thème/i.test(cleaned)) return cleaned;
+    
+    // For date formats like "JANVIER 2020", "Juin 2016", etc., prefix with "Session"
+    if (/^(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}/i.test(cleaned) ||
+        /^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/i.test(cleaned)) {
+      return `Session ${cleaned}`;
+    }
+    
+    // Otherwise, use as-is (for complex formats)
+    return cleaned;
+  };
+
+  // Build the metadata line with better structure
+  const buildMetadataLine = () => {
+    const parts: string[] = [];
+    
+    // Always start with QROC
+    if (questionNumber !== undefined) {
+      parts.push(`QROC ${questionNumber}`);
+    } else {
+      parts.push('QROC');
+    }
+    
+    // Add formatted session if available
+    const formattedSession = formatSession(session);
+    if (formattedSession) {
+      parts.push(formattedSession);
+    }
+    
+    return parts.join(' • ');
+  };
+
+  const metadataLine = buildMetadataLine();
   
   return (
     <div className="space-y-2">
       {!hideMeta && (
         <>
           <div className="text-sm sm:text-base font-semibold text-foreground dark:text-gray-100">
-            {firstLine}
+            {metadataLine}
           </div>
           {(specialtyName || lectureTitle) && (
             <div className="text-xs sm:text-sm text-muted-foreground">

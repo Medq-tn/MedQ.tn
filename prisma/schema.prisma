@@ -68,6 +68,9 @@ model Specialty {
   name        String
   description String?
   icon        String?
+  iconType    String?   @map("icon_type")
+  iconColor   String?   @map("icon_color")
+  imageUrl    String?   @map("image_url")
   niveauId    String?   @map("niveau_id") @db.Uuid
   semesterId  String?   @map("semester_id") @db.Uuid
   isFree      Boolean   @default(false) @map("is_free")
@@ -84,7 +87,6 @@ model Specialty {
   courseReminderMediaType String? @map("course_reminder_media_type")
   @@map("specialties")
 }
-
 model Lecture {
   id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   specialtyId String         @map("specialty_id") @db.Uuid
@@ -422,4 +424,29 @@ model SessionCorrectionSubmission {
 
   @@unique([sessionId, userId], map: "unique_session_user_correction_submission")
   @@map("session_correction_submissions")
+}
+
+// RAG indexing (DB-backed embeddings)
+model RagIndex {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String?
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  chunks    RagChunk[]
+
+  @@map("rag_index")
+}
+
+model RagChunk {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  indexId   String   @map("index_id") @db.Uuid
+  page      Int?
+  ord       Int?     @map("ord")
+  text      String
+  embedding Float[]
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  index     RagIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+
+  @@index([indexId], map: "idx_ragchunk_index")
+  @@map("rag_chunks")
 }

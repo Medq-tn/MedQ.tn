@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, Send, Edit2, Trash2, Reply, X, Shield } from 'lucide-react';
+import { MessageCircle, Send, Edit2, Trash2, Reply, X, Shield, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -279,90 +279,116 @@ export function LectureComments({ lectureId }: LectureCommentsProps) {
   const CommentItem = ({ comment, depth = 0 }: { comment: Comment; depth?: number }) => {
     const isOwner = comment.userId === user.id;
     const isEdited = comment.createdAt !== comment.updatedAt;
-  // likes removed
+    const displayName = comment.isAnonymous ? 'Anonymous' : (comment.user?.name || comment.user?.email || 'User');
+    const initials = getUserInitials(comment.user?.name, comment.user?.email);
+    const hasReplies = comment.replies && comment.replies.length > 0;
+
     return (
-      <div className={`group flex gap-3 p-4 rounded-xl border bg-background/40 hover:bg-background/70 transition-colors ${depth > 0 ? 'ml-10 mt-2' : ''}`}>        
-        <Avatar className="h-10 w-10 ring-2 ring-background/60">
-          {!comment.isAnonymous && <AvatarImage src={comment.user?.avatar || undefined} />}
-          <AvatarFallback>{comment.isAnonymous ? 'AN' : getUserInitials(comment.user?.name, comment.user?.email)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <span className="font-medium truncate max-w-[160px]">{displayName(comment)}</span>
-            {!comment.isAnonymous && (comment.user?.role === 'admin' || (isOwner && isAdmin)) && (
-              <span className="px-1.5 py-0.5 text-[10px] tracking-wide bg-blue-500/15 text-blue-500 rounded-full">ADMIN</span>
-            )}
-            <span className="text-xs text-muted-foreground">{new Date(comment.createdAt).toLocaleDateString()}</span>
-            {isEdited && <span className="text-[10px] text-muted-foreground">(edited)</span>}
+      <div className={`${depth > 0 ? 'ml-8' : ''}`}>
+        <div className="flex gap-3">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+              {comment.isAnonymous ? <EyeOff className="h-4 w-4" /> : initials}
+            </div>
           </div>
-          {editingComment === comment.id ? (
-            <div className="mt-2 space-y-2">
-              <Textarea value={editContent} onChange={e => setEditContent(e.target.value)} className="min-h-[70px] text-sm" />
-              <div className="flex gap-2 justify-end">
-                <Button size="sm" onClick={() => handleEditComment(comment.id)} disabled={!editContent.trim()}>Save</Button>
-                <Button size="sm" variant="outline" onClick={cancelEditing}>Cancel</Button>
+
+          {/* Comment Content */}
+          <div className="flex-1 min-w-0">
+            {editingComment === comment.id ? (
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
+                <Textarea value={editContent} onChange={e => setEditContent(e.target.value)} className="min-h-[70px] text-sm bg-transparent border-none resize-none" placeholder="Edit your comment..." />
+                <div className="flex gap-2 justify-end mt-2">
+                  <Button size="sm" variant="outline" onClick={cancelEditing}>Cancel</Button>
+                  <Button size="sm" onClick={() => handleEditComment(comment.id)} disabled={!editContent.trim()}>Save</Button>
+                </div>
               </div>
+            ) : (
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
+                <div className="font-semibold text-sm mb-1 flex items-center gap-2">
+                  {displayName}
+                  {!comment.isAnonymous && (comment.user?.role === 'admin' || (isOwner && isAdmin)) && (
+                    <span className="px-1.5 py-0.5 text-[10px] tracking-wide bg-blue-500/15 text-blue-500 rounded-full">ADMIN</span>
+                  )}
+                  {comment.isAnonymous && isAdmin && (
+                    <span title="Posted anonymously">
+                      <EyeOff className="h-3.5 w-3.5 text-amber-600" />
+                    </span>
+                  )}
+                  {isEdited && <span className="text-[10px] text-muted-foreground">(edited)</span>}
+                </div>
+                <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                  {comment.content}
+                </div>
+              </div>
+            )}
+
+            {/* Comment Actions */}
+            <div className="flex items-center gap-4 mt-1 px-2">
+              <span className="text-xs text-gray-500">
+                {new Date(comment.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+              </span>
+              
+              <button
+                onClick={() => { setReplyTo(comment); setReplyAnon(false); }}
+                className="text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                Reply
+              </button>
+              
+              {isOwner && editingComment !== comment.id && (
+                <button
+                  onClick={() => startEditing(comment)}
+                  className="text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+              
+              {(isOwner || isAdmin) && editingComment !== comment.id && (
+                <button
+                  onClick={() => setDeleteTarget(comment)}
+                  className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors"
+                >
+                  Delete
+                </button>
+              )}
+              
+              {comment.isAnonymous && isAdmin && !isOwner && comment.user?.name && (
+                <span className="ml-2 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">
+                  <Shield className="h-3 w-3" />{comment.user.name}
+                </span>
+              )}
             </div>
-          ) : (
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{comment.content}</p>
-          )}
-          <div className="mt-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {isOwner && editingComment !== comment.id && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditing(comment)} title="Edit"><Edit2 className="h-3.5 w-3.5" /></Button>
+
+            {/* Reply Form */}
+            {replyTo?.id === comment.id && (
+              <div className="mt-3 ml-0">
+                <InlineReplyEditor
+                  key={comment.id}
+                  parent={comment}
+                  defaultAnon={replyAnon}
+                  onCancel={() => { setReplyTo(null); setReplyAnon(false); }}
+                  onSubmit={(content, anon) => submitReply(content, anon, comment)}
+                />
+              </div>
             )}
-            {(isOwner || isAdmin) && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => setDeleteTarget(comment)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete comment</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action will permanently remove the comment{comment.replies && comment.replies.length > 0 ? ' and its replies' : ''}. This cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction disabled={isDeleting} onClick={() => deleteTarget && handleDeleteComment(deleteTarget.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      {isDeleting ? 'Deleting...' : 'Delete'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            {/* likes removed */}
-            {/* reply button only for top-level comments (depth 0) to enforce single-level replies */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => { setReplyTo(comment); setReplyAnon(false); }}
-              title="Reply"
-            >
-              <Reply className="h-3.5 w-3.5" />
-            </Button>
-            {/* admin identity reveal badge for anonymous */}
-            {comment.isAnonymous && isAdmin && !isOwner && comment.user?.name && (
-              <span className="ml-2 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600"><Shield className="h-3 w-3" />{comment.user.name}</span>
+
+            {/* Replies */}
+            {hasReplies && (
+              <div className="mt-3 space-y-3">
+                {comment.replies?.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map(reply => (
+                  <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
+                ))}
+              </div>
             )}
           </div>
-          {replyTo?.id === comment.id && (
-            <InlineReplyEditor
-              key={comment.id}
-              parent={comment}
-              defaultAnon={replyAnon}
-              onCancel={() => { setReplyTo(null); setReplyAnon(false); }}
-              onSubmit={(content, anon) => submitReply(content, anon, comment)}
-            />
-          )}
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {comment.replies.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map(r => (
-                <CommentItem key={r.id} comment={r} depth={depth + 1} />
-              ))}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -429,6 +455,28 @@ export function LectureComments({ lectureId }: LectureCommentsProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete comment</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will permanently remove the comment{deleteTarget?.replies && deleteTarget.replies.length > 0 ? ' and its replies' : ''}. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              disabled={isDeleting} 
+              onClick={() => deleteTarget && handleDeleteComment(deleteTarget.id)} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

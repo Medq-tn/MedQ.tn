@@ -24,7 +24,9 @@ export function QuestionNotes({ questionId }: QuestionNotesProps) {
   const [isEditing, setIsEditing] = useState(false);
   const lastSavedValueRef = useRef('');
   const lastSavedImagesRef = useRef<ImageData[]>([]);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null); // legacy; no longer used for immediate autosave
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastInputTimeRef = useRef<number>(Date.now());
 
   // Check if there's any content (text or images)
   const hasContent = useMemo(() => {
@@ -122,15 +124,29 @@ export function QuestionNotes({ questionId }: QuestionNotesProps) {
     }
   };
 
-  // Autosave on change (debounced)
+  // Inactivity-based autosave: only save if 10s of no user input and there are changes
   useEffect(() => {
     if (!initialLoaded) return;
-    if (!hasChanges) return;
     if (!user?.id) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => { void save(true); }, 900);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [value, images, initialLoaded, hasChanges, user?.id]);
+
+    // Mark time of latest input whenever value/images change
+    lastInputTimeRef.current = Date.now();
+
+    // Clear existing inactivity timer
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    // Schedule a check in 10s
+    inactivityTimerRef.current = setTimeout(() => {
+      const idleFor = Date.now() - lastInputTimeRef.current;
+      if (idleFor >= 10000 && hasChanges) {
+        void save(true);
+      }
+    }, 10000);
+
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [value, images, initialLoaded, user?.id, hasChanges]);
 
   const clearNote = async () => {
     setValue('');
@@ -227,9 +243,9 @@ export function QuestionNotes({ questionId }: QuestionNotesProps) {
           <>
             <RichTextInput
               value={value}
-              onChange={setValue}
+              onChange={(v) => { setValue(v); /* input timestamp handled in effect */ }}
               images={images}
-              onImagesChange={setImages}
+              onImagesChange={(imgs) => { setImages(imgs); }}
               placeholder="Écrivez vos notes personnelles pour cette question…"
               className="min-h-[120px] mb-3"
             />

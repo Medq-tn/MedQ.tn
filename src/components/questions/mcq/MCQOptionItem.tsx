@@ -89,18 +89,18 @@ export function MCQOptionItem({
 
   return (
     <div 
-      className={`rounded-lg border ${borderColorClass} p-3 ${bgColorClass} transition-colors duration-200 w-full max-w-full relative ${isSubmitted ? 'cursor-default' : 'cursor-pointer'}`}
+      className={`rounded-lg border ${borderColorClass} p-4 ${bgColorClass} transition-colors duration-200 w-full max-w-full relative ${isSubmitted ? 'cursor-default' : 'cursor-pointer'}`}
       onClick={isSubmitted ? undefined : () => onSelect(option.id)}
     >
-      <div className="flex items-start gap-2 w-full">
-        <div className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center transition-colors
+      <div className="flex items-start gap-3 w-full">
+        <div className={`flex-shrink-0 h-7 w-7 rounded-full flex items-center justify-center transition-colors text-sm font-medium
           ${isSelected ? 'bg-primary text-primary-foreground ring-2 ring-primary/40' : 'bg-muted text-muted-foreground'}`}
         >
           {optionLetter}
         </div>
         
         <div className="flex-grow min-w-0">
-          <div className={`${textColorClass} break-words`}>
+          <div className={`${textColorClass} break-words text-base sm:text-lg leading-relaxed`}>
             {enableHighlighting && questionId ? (
               <HighlightableOptionText 
                 optionId={option.id}
@@ -114,7 +114,7 @@ export function MCQOptionItem({
           </div>
           
           {isSubmitted && !hideImmediateResults && option.explanation && (
-            <div className="mt-2">
+            <div className="mt-3">
               <div className="flex items-center justify-between">
                 <button 
                   onClick={(e) => {
@@ -138,7 +138,7 @@ export function MCQOptionItem({
               </div>
               
               {isExpanded && (
-                <div className="mt-2 text-sm pl-2 border-l-2 border-muted py-2 text-foreground">
+                <div className="mt-3 text-base sm:text-lg pl-3 border-l-2 border-muted py-2 text-foreground leading-relaxed">
                   {enableHighlighting && questionId ? (
                     <HighlightableOptionText 
                       optionId={`${option.id}-explanation`}

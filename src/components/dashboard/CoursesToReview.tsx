@@ -94,7 +94,7 @@ export const CoursesToReview: React.FC = () => {
       {/* Accent gradient top line */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary/40 via-primary/10 to-primary/40" />
       <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
-        <CardTitle className="flex items-center gap-2 text-2xl font-semibold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
           <Sparkles className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           Cours à revoir
         </CardTitle>

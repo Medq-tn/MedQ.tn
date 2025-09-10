@@ -229,6 +229,41 @@ export function useLecture(lectureId: string | undefined, mode?: string | null) 
     hasSyncedProgress.current = false;
   }, [fetchLectureData]);
 
+  // Prefill answers/results automatically for revision mode (single run)
+  const revisionPrefilledRef = useRef(false);
+  useEffect(() => {
+    if (mode === 'revision' && !revisionPrefilledRef.current) {
+      // Only prefill once when questions are loaded AND no existing answers
+      if (allQuestions.length > 0 && Object.keys(answers).length === 0) {
+        const prefillAnswers: Record<string, any> = {};
+        const prefillResults: Record<string, boolean | 'partial'> = {};
+        for (const q of allQuestions) {
+          // MCQ & clinical MCQ: array of correct option ids
+          if (q.type === 'mcq' || q.type === 'clinic_mcq') {
+            const correct = (q.correct_answers || q.correctAnswers || []) as string[];
+            prefillAnswers[q.id] = correct;
+            prefillResults[q.id] = true;
+          } else {
+            // Open/QROC/clinical CROQ: use reference textual answer if available
+            const ref = (
+              (Array.isArray((q as any).correctAnswers) && (q as any).correctAnswers.length > 0 && (q as any).correctAnswers.filter(Boolean).join(' / ')) ||
+              (Array.isArray((q as any).correct_answers) && (q as any).correct_answers.length > 0 && (q as any).correct_answers.filter(Boolean).join(' / ')) ||
+              (q as any).course_reminder ||
+              (q as any).courseReminder ||
+              (q as any).explanation ||
+              ''
+            );
+            prefillAnswers[q.id] = ref;
+            prefillResults[q.id] = true;
+          }
+        }
+        setAnswers(prefillAnswers);
+        setAnswerResults(prefillResults);
+        revisionPrefilledRef.current = true;
+      }
+    }
+  }, [mode, allQuestions, answers, setAnswers, setAnswerResults]);
+
   // Load pinned questions (needed to show pin icon in navigation regardless of mode)
   useEffect(() => {
     const loadPinnedQuestions = async () => {

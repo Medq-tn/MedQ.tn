@@ -67,7 +67,7 @@ export const SpecialtyAverageSlider: React.FC = () => {
     <Card className="relative border border-border/50 bg-white/55 dark:bg-muted/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow flex flex-col overflow-hidden rounded-lg">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary/40 via-primary/10 to-primary/40" />
       <CardHeader className="pb-1 flex flex-row items-start justify-between gap-4">
-        <CardTitle className="flex items-center gap-2 text-2xl font-semibold leading-snug bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight leading-snug bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
           <BarChart3 className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" />
           <span>Moyennes</span>
         </CardTitle>

@@ -264,10 +264,15 @@ export default function CoursPageRoute() {
       );
     }
 
-    // Regular question handling
-    const isAnswered = answers[currentQuestion.id] !== undefined;
-    const answerResult = answerResults[currentQuestion.id];
-    const userAnswer = answers[currentQuestion.id];
+  // Regular question handling
+  const revisionMode = mode === 'revision';
+  const isAnswered = revisionMode ? true : (answers[currentQuestion.id] !== undefined);
+  const answerResult = revisionMode ? true : answerResults[currentQuestion.id];
+  const userAnswer = revisionMode
+    ? (currentQuestion.type === 'mcq'
+      ? (currentQuestion.correct_answers || currentQuestion.correctAnswers || [])
+      : ((currentQuestion as any).correctAnswers || (currentQuestion as any).correct_answers || (currentQuestion as any).course_reminder || (currentQuestion as any).explanation || ''))
+    : answers[currentQuestion.id];
     
 
     
@@ -284,9 +289,10 @@ export default function CoursPageRoute() {
           answerResult={answerResult}
           userAnswer={userAnswer}
           onQuestionUpdate={handleQuestionUpdate}
-          highlightConfirm
+          highlightConfirm={!revisionMode}
           hideMeta
           enableOptionHighlighting={true}
+          hideActions={revisionMode}
         />
       );
     } else {
@@ -300,11 +306,12 @@ export default function CoursPageRoute() {
           specialtyName={lecture?.specialty?.name}
           isAnswered={isAnswered}
           answerResult={answerResult}
-          userAnswer={userAnswer}
+          userAnswer={userAnswer as any}
           onQuestionUpdate={handleQuestionUpdate}
-          highlightConfirm
+          highlightConfirm={!revisionMode}
           hideMeta={(currentQuestion as any).type === 'qroc'}
           enableAnswerHighlighting={true}
+          hideActions={revisionMode}
         />
       );
     }
@@ -325,15 +332,72 @@ export default function CoursPageRoute() {
                     <div className="flex flex-col">
                       <h1 className="text-base md:text-lg font-semibold leading-tight text-gray-900 dark:text-gray-100">
                         {(() => {
+                          // Enhanced session formatting to preserve full session information
+                          const formatSession = (sessionValue?: string) => {
+                            if (!sessionValue) return '';
+                            
+                            // Clean up parentheses and extra spaces
+                            let cleaned = sessionValue.replace(/^\(|\)$/g, '').trim();
+                            
+                            // If already contains "Session", use as-is
+                            if (/session/i.test(cleaned)) return cleaned;
+                            
+                            // If it's just a number or year, format as "Session X"
+                            if (/^\d+$/.test(cleaned)) return `Session ${cleaned}`;
+                            
+                            // If it contains "theme" or other descriptive text, use as-is
+                            if (/theme|thème/i.test(cleaned)) return cleaned;
+                            
+                            // For date formats like "JANVIER 2020", "Juin 2016", etc., prefix with "Session"
+                            if (/^(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}/i.test(cleaned) ||
+                                /^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/i.test(cleaned)) {
+                              return `Session ${cleaned}`;
+                            }
+                            
+                            // Otherwise, use as-is (for complex formats)
+                            return cleaned;
+                          };
+
                           // Handle clinical cases
                           if ('caseNumber' in currentQuestion && 'questions' in currentQuestion) {
                             const clinicalCase = currentQuestion as ClinicalCase;
-                            return `Cas Clinique / Question ${(currentQuestion as any)?.number ?? currentQuestionIndex + 1}`;
+                            const parts: string[] = [];
+                            parts.push(`Cas Clinique ${clinicalCase.caseNumber}`);
+                            
+                            // Add session info if available from the first question
+                            const firstQuestion = clinicalCase.questions[0];
+                            if (firstQuestion?.session) {
+                              const formattedSession = formatSession(firstQuestion.session);
+                              if (formattedSession) {
+                                parts.push(formattedSession);
+                              }
+                            }
+                            
+                            return parts.join(' / ');
                           }
-                          // Handle regular questions
-                          return ((currentQuestion as any).type === 'mcq' ? 'QCM' : 
-                            ((currentQuestion as any).type === 'qroc' || (currentQuestion as any).type === 'open') ? 'QROC' : 
-                            ((currentQuestion as any).type || '').toUpperCase()) + ` / Question ${(currentQuestion as any)?.number ?? currentQuestionIndex + 1}`;
+                          
+                          // Handle regular questions with enhanced metadata
+                          const question = currentQuestion as any;
+                          const parts: string[] = [];
+                          
+                          // Add question type and number
+                          if (question.type === 'mcq') {
+                            parts.push(`QCM ${question.number ?? currentQuestionIndex + 1}`);
+                          } else if (question.type === 'qroc' || question.type === 'open') {
+                            parts.push(`QROC ${question.number ?? currentQuestionIndex + 1}`);
+                          } else {
+                            parts.push(`${(question.type || '').toUpperCase()} ${question.number ?? currentQuestionIndex + 1}`);
+                          }
+                          
+                          // Add formatted session if available
+                          if (question.session) {
+                            const formattedSession = formatSession(question.session);
+                            if (formattedSession) {
+                              parts.push(formattedSession);
+                            }
+                          }
+                          
+                          return parts.join(' / ');
                         })()}
                       </h1>
                       {(lecture?.title || lecture?.specialty?.name) && (
@@ -370,6 +434,8 @@ export default function CoursPageRoute() {
                       <LectureTimer lectureId={lectureId} />
                     </div>
                   </div>
+                  {/* Divider under metadata (blue, thicker, indented) */}
+                  <div className="h-1 bg-blue-500 dark:bg-blue-600 rounded w-[250px]" />
                 </div>
               )}
 

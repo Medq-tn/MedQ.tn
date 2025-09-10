@@ -770,7 +770,7 @@ export function MCQQuestion({
         return (
           <Card className="mt-2">
             <CardHeader className="py-3">
-              <Collapsible defaultOpen={false}>
+              <Collapsible defaultOpen={true}>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <BookOpen className="h-4 w-4" />
@@ -788,7 +788,7 @@ export function MCQQuestion({
                         <ZoomableImage src={reminderMediaUrl} alt="Image du rappel" />
                       )}
                       {text && (
-                        <div className="prose dark:prose-invert max-w-none text-sm">
+                        <div className="prose dark:prose-invert max-w-none text-base sm:text-lg">
                           <RichTextDisplay text={text} enableImageZoom={true} />
                         </div>
                       )}

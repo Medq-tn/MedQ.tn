@@ -99,8 +99,8 @@ export default function MatieresPage() {
   const handlePin = useCallback(async (specialty: Specialty) => {
     if (!user?.id) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to pin specialties.",
+        title: "Authentification requise",
+        description: "Veuillez vous connecter pour épingler des matières.",
         variant: "destructive",
       });
       return;
@@ -126,22 +126,22 @@ export default function MatieresPage() {
         });
         
         toast({
-          title: "Specialty Pinned",
-          description: `${specialty.name} has been pinned to the top.`,
+          title: "Matière épinglée",
+          description: `${specialty.name} a été épinglée en haut.`,
         });
       } else {
         const errorData = await response.json();
         toast({
-          title: "Error",
-          description: errorData.error || "Failed to pin specialty.",
+          title: "Erreur",
+          description: errorData.error || "Impossible d'épingler la matière.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Error pinning specialty:', error);
       toast({
-        title: "Error",
-        description: "Failed to pin specialty. Please try again.",
+        title: "Erreur",
+        description: "Impossible d'épingler la matière. Veuillez réessayer.",
         variant: "destructive",
       });
     }
@@ -150,8 +150,8 @@ export default function MatieresPage() {
   const handleUnpin = useCallback(async (specialty: Specialty) => {
     if (!user?.id) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to unpin specialties.",
+        title: "Authentification requise",
+        description: "Veuillez vous connecter pour désépingler des matières.",
         variant: "destructive",
       });
       return;
@@ -170,22 +170,22 @@ export default function MatieresPage() {
         });
         
         toast({
-          title: "Specialty Unpinned",
-          description: `${specialty.name} has been unpinned.`,
+          title: "Matière désépinglée",
+          description: `${specialty.name} a été désépinglée.`,
         });
       } else {
         const errorData = await response.json();
         toast({
-          title: "Error",
-          description: errorData.error || "Failed to unpin specialty.",
+          title: "Erreur",
+          description: errorData.error || "Impossible de désépingler la matière.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Error unpinning specialty:', error);
       toast({
-        title: "Error",
-        description: "Failed to unpin specialty. Please try again.",
+        title: "Erreur",
+        description: "Impossible de désépingler la matière. Veuillez réessayer.",
         variant: "destructive",
       });
     }
@@ -222,20 +222,9 @@ export default function MatieresPage() {
 
   const fetchSpecialties = useCallback(async (forceRefresh = false) => {
     try {
-      // Check cache first
-      const now = Date.now();
-  // Only use cache for admins; non-admins have user-specific visibility
-  const canUseCache = isAdmin && niveauFilter === 'all' && semesterFilter === 'all';
-  if (canUseCache && !forceRefresh && specialtiesCache && (now - cacheTimestamp) < CACHE_DURATION) {
-        setSpecialties(specialtiesCache);
-        setFilteredSpecialties(specialtiesCache);
-        setIsLoading(false);
-        return;
-      }
-
       setIsLoading(true);
       const params = new URLSearchParams();
-  if (isAdmin) {
+      if (isAdmin) {
         if (niveauFilter && niveauFilter !== 'all') params.set('niveau', niveauFilter);
         if (semesterFilter && semesterFilter !== 'all') params.set('semester', semesterFilter);
       }
@@ -246,24 +235,19 @@ export default function MatieresPage() {
         }
       });
       
-  if (!response.ok) {
-        throw new Error('Failed to fetch specialties');
+      if (!response.ok) {
+        throw new Error('Impossible de récupérer les matières');
       }
-
+      
       const data = await response.json();
+      console.log('Fetched specialties:', data); // Debug log
       setSpecialties(data || []);
       setFilteredSpecialties(data || []);
-      
-  // Update cache only for admin unfiltered case
-  if (isAdmin && niveauFilter === 'all' && semesterFilter === 'all') {
-        specialtiesCache = data || [];
-        cacheTimestamp = now;
-      }
     } catch (error) {
       console.error('Error fetching specialties:', error);
       toast({
-        title: t('common.error'),
-        description: t('common.tryAgain'),
+        title: "Erreur",
+        description: "Une erreur s'est produite. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
@@ -287,7 +271,7 @@ export default function MatieresPage() {
   }, []);
 
   const handleDeleteSpecialty = useCallback(async (specialty: Specialty) => {
-    if (!confirm(t('common.confirmDelete'))) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette matière ?')) return;
     
     try {
       const response = await fetch(`/api/specialties/${specialty.id}`, {
@@ -295,7 +279,7 @@ export default function MatieresPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete specialty');
+        throw new Error('Impossible de supprimer la matière');
       }
 
       setSpecialties(prev => prev.filter(s => s.id !== specialty.id));
@@ -304,14 +288,14 @@ export default function MatieresPage() {
       specialtiesCache = null;
       
       toast({
-        title: t('common.success'),
-        description: t('specialties.deletedSuccessfully'),
+        title: "Succès",
+        description: "Matière supprimée avec succès.",
       });
     } catch (error) {
       console.error('Error deleting specialty:', error);
       toast({
-        title: t('common.error'),
-        description: t('common.tryAgain'),
+        title: "Erreur",
+        description: "Une erreur s'est produite. Veuillez réessayer.",
         variant: "destructive",
       });
     }
@@ -360,77 +344,82 @@ export default function MatieresPage() {
   return (
     <ProtectedRoute>
       <AppSidebarProvider>
-        <div className="flex min-h-screen w-full">
+        <div className="flex h-screen w-full overflow-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col">
-            {/* Universal Header with title, search, and actions */}
+          <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+            {/* Universal Header with title and search only */}
             <UniversalHeader
               title="Matières"
               showSearch={true}
               searchValue={searchQuery}
               onSearchChange={setSearchQuery}
               searchPlaceholder="Rechercher des matières..."
+              searchAlign="right"
+              graySearch
+              searchWidthClass="max-w-xl md:max-w-4xl lg:max-w-5xl"
               hideSeparator
-              actions={isAdmin ? (
-                <div className="flex items-center gap-3">
-                  {/* Niveau Filter */}
-                  {niveaux.length > 0 && (
-                    <Select value={niveauFilter} onValueChange={(v) => { 
-                      setNiveauFilter(v); 
-                      // Reset semester filter when niveau changes
-                      if (v !== 'all') {
-                        setSemesterFilter('all');
-                      }
-                      fetchSpecialties(true); 
-                    }}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by niveau" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All niveaux</SelectItem>
-                        {niveaux.map((n) => (
-                          <SelectItem key={n.id} value={n.id}>
-                            {n.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  
-                  {/* Semester Filter */}
-                  {semesters.length > 0 && (
-                    <Select value={semesterFilter} onValueChange={(v) => { setSemesterFilter(v); fetchSpecialties(true); }}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by semester" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All semesters</SelectItem>
-                        <SelectItem value="none">No semester</SelectItem>
-                        {semesters
-                          .filter(s => niveauFilter === 'all' || s.niveauId === niveauFilter)
-                          .map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name} {typeof s.order === 'number' ? `(S${s.order})` : ''}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  
-                  <Button 
-                    onClick={handleAddSpecialty}
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add Specialty
-                  </Button>
-                </div>
-              ) : undefined}
             />
 
             {/* Main Content */}
-            <div className="flex-1 bg-gray-50 dark:bg-gray-900">
+            <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Admin Filters and Controls - Not Sticky */}
+                {isAdmin && (
+                  <div className="flex items-center justify-end gap-3 mb-8">
+                    {/* Niveau Filter */}
+                    {niveaux.length > 0 && (
+                      <Select value={niveauFilter} onValueChange={(v) => { 
+                        setNiveauFilter(v); 
+                        // Reset semester filter when niveau changes
+                        if (v !== 'all') {
+                          setSemesterFilter('all');
+                        }
+                        fetchSpecialties(true); 
+                      }}>
+                        <SelectTrigger className="w-[180px] bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:ring-0 focus-visible:ring-0">
+                          <SelectValue placeholder="Filtrer par niveau" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les niveaux</SelectItem>
+                          {niveaux.map((n) => (
+                            <SelectItem key={n.id} value={n.id}>
+                              {n.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    
+                    {/* Semester Filter */}
+                    {semesters.length > 0 && (
+                      <Select value={semesterFilter} onValueChange={(v) => { setSemesterFilter(v); fetchSpecialties(true); }}>
+                        <SelectTrigger className="w-[180px] bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:ring-0 focus-visible:ring-0">
+                          <SelectValue placeholder="Filtrer par semestre" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les semestres</SelectItem>
+                          <SelectItem value="none">Aucun semestre</SelectItem>
+                          {semesters
+                            .filter(s => niveauFilter === 'all' || s.niveauId === niveauFilter)
+                            .map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.name} {typeof s.order === 'number' ? `(S${s.order})` : ''}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    
+                    <Button 
+                      onClick={handleAddSpecialty}
+                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Ajouter une matière
+                    </Button>
+                  </div>
+                )}
+
                 {/* Upsell Banner for Free Users */}
                 {shouldShowUpsell && (
                   <div className="mb-8">

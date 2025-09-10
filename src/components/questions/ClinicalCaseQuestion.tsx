@@ -290,19 +290,16 @@ export function ClinicalCaseQuestion({
     }
   }, [evaluationIndex, evaluationOrder, showResults, evaluationComplete]);
 
-  // Keyboard navigation: Answer phase (Enter to advance), Evaluation phase (1/2/3 to grade, Enter after all graded)
+  // Keyboard navigation: Answer phase (Enter to advance), Evaluation phase disabled (no keyboard shortcuts)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Evaluation phase key handling
+      // Evaluation phase key handling - DISABLED to remove 1/2/3 shortcuts
       if (showResults && !evaluationComplete) {
-        // Only number keys 1/2/3 valid for evaluation
+        // Disable all number keys for evaluation - user must click buttons
         if (["1", "2", "3"].includes(e.key)) {
-          const currentEvalId = evaluationOrder[evaluationIndex];
-          if (currentEvalId) {
-            e.preventDefault();
-            const mapping: Record<string, boolean | 'partial'> = { '1': true, '2': 'partial', '3': false };
-            handleSelfAssessmentUpdate(currentEvalId, mapping[e.key]);
-          }
+          // No longer handle 1/2/3 shortcuts
+          e.preventDefault();
+          return;
         } else if (e.key === 'Enter') {
           // Enter disabled during evaluation selection
           e.preventDefault();
@@ -434,7 +431,7 @@ export function ClinicalCaseQuestion({
           <div className="mb-2 flex items-center gap-2 text-xs">
             {isCurrentEvaluationTarget && !hasEvaluation && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 font-medium">
-                Évaluer (1=Correct 2=Partiel 3=Incorrect)
+                Évaluer
               </span>
             )}
             {hasEvaluation && (
@@ -507,61 +504,111 @@ export function ClinicalCaseQuestion({
             {(() => {
               const firstQuestion = clinicalCase.questions[0];
               const session = firstQuestion?.session;
-              const parts: string[] = ['Cas Clinique', `${clinicalCase.caseNumber}`];
-              if (session) {
-                {showResults && !evaluationComplete && `Phase d'évaluation (${evaluationOrder.filter(id => questionResults[id] !== undefined).length}/${evaluationOrder.length}) - 1=Correct 2=Partiel 3=Incorrect`}
-                {showResults && evaluationComplete && 'Évaluation terminée - Entrée pour continuer'}
+              
+              // Enhanced session formatting to preserve full session information
+              const formatSession = (sessionValue?: string) => {
+                if (!sessionValue) return '';
+                
+                // Clean up parentheses and extra spaces
+                let cleaned = sessionValue.replace(/^\(|\)$/g, '').trim();
+                
+                // If already contains "Session", use as-is
+                if (/session/i.test(cleaned)) return cleaned;
+                
+                // If it's just a number or year, format as "Session X"
+                if (/^\d+$/.test(cleaned)) return `Session ${cleaned}`;
+                
+                // If it contains "theme" or other descriptive text, use as-is
+                if (/theme|thème/i.test(cleaned)) return cleaned;
+                
+                // For date formats like "JANVIER 2020", "Juin 2016", etc., prefix with "Session"
+                if (/^(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}/i.test(cleaned) ||
+                    /^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/i.test(cleaned)) {
+                  return `Session ${cleaned}`;
+                }
+                
+                // Otherwise, use as-is (for complex formats)
+                return cleaned;
+              };
+
+              // Build the metadata line with better structure
+              const parts: string[] = [];
+              parts.push(`Cas Clinique ${clinicalCase.caseNumber}`);
+              
+              const formattedSession = formatSession(session);
+              if (formattedSession) {
+                parts.push(formattedSession);
               }
+              
+              // Add evaluation status if in results phase
+              if (showResults && !evaluationComplete) {
+                parts.push(`Phase d'évaluation (${evaluationOrder.filter(id => questionResults[id] !== undefined).length}/${evaluationOrder.length})`);
+              } else if (showResults && evaluationComplete) {
+                parts.push('Évaluation terminée');
+              }
+              
               return (
-                <div className="flex items-center gap-2 text-sm sm:text-base font-semibold text-foreground dark:text-gray-100">
-                  <span className="truncate">{parts.join(' / ')}</span>
-                  {groupPinned && <Pin className="h-4 w-4 text-pink-500" />}
-                  {groupHidden && <EyeOff className="h-4 w-4 text-red-500" />}
-                  {isCaseComplete && showResults && (
-                    <span className="flex items-center gap-1">
-                      {answerResult === true && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      {answerResult === 'partial' && <AlertCircle className="h-4 w-4 text-yellow-600" />}
-                      {answerResult === false && <AlertCircle className="h-4 w-4 text-red-600" />}
+                <div>
+                  <div className="flex items-center gap-2 text-sm sm:text-base font-semibold text-foreground dark:text-gray-100">
+                    <span className="truncate">{parts.join(' • ')}</span>
+                    {groupPinned && <Pin className="h-4 w-4 text-pink-500" />}
+                    {groupHidden && <EyeOff className="h-4 w-4 text-red-500" />}
+                    {isCaseComplete && showResults && (
+                      <span className="flex items-center gap-1">
+                        {answerResult === true && <CheckCircle className="h-4 w-4 text-green-600" />}
+                        {answerResult === 'partial' && <AlertCircle className="h-4 w-4 text-yellow-600" />}
+                        {answerResult === false && <AlertCircle className="h-4 w-4 text-red-600" />}
+                      </span>
+                    )}
+                    <span className="ml-auto inline-flex gap-1">
+                      <Button variant="outline" size="sm" onClick={toggleGroupPin} className="flex items-center gap-1">
+                        {groupPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                        <span className="hidden sm:inline">{groupPinned ? 'Unpin' : 'Pin'}</span>
+                      </Button>
+                      {(user?.role === 'admin' || user?.role === 'maintainer') && (
+                        <Button variant="outline" size="sm" onClick={toggleGroupHidden} disabled={isTogglingHidden} title={groupHidden ? 'Unhide' : 'Hide'}>
+                          {groupHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                        </Button>
+                      )}
+                      {(user?.role === 'admin' || user?.role === 'maintainer') && (
+                        <Button variant="outline" size="sm" title="Éditer le cas clinique" onClick={() => setOpenCaseEdit(true)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {/* Report whole clinical case (reports first question id for context) */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Signaler"
+                        onClick={() => {
+                          const first = clinicalCase.questions[0];
+                          if (first) {
+                            setReportTargetQuestion(first);
+                            setIsReportDialogOpen(true);
+                          }
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <Flag className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Signaler</span>
+                      </Button>
+                      {user?.role === 'admin' && (
+                        <Button variant="outline" size="sm" className="text-destructive" disabled={isDeleting} onClick={handleDeleteGroup} title="Delete all">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </span>
+                  </div>
+                  {showResults && !evaluationComplete && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Utilisez les touches 1 (Correct), 2 (Partiel), 3 (Incorrect) pour évaluer
+                    </div>
                   )}
-                  <span className="ml-auto inline-flex gap-1">
-                    <Button variant="outline" size="sm" onClick={toggleGroupPin} className="flex items-center gap-1">
-                      {groupPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-                      <span className="hidden sm:inline">{groupPinned ? 'Unpin' : 'Pin'}</span>
-                    </Button>
-                    {(user?.role === 'admin' || user?.role === 'maintainer') && (
-                      <Button variant="outline" size="sm" onClick={toggleGroupHidden} disabled={isTogglingHidden} title={groupHidden ? 'Unhide' : 'Hide'}>
-                        {groupHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      </Button>
-                    )}
-                    {(user?.role === 'admin' || user?.role === 'maintainer') && (
-                      <Button variant="outline" size="sm" title="Éditer le cas clinique" onClick={() => setOpenCaseEdit(true)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {/* Report whole clinical case (reports first question id for context) */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      title="Signaler"
-                      onClick={() => {
-                        const first = clinicalCase.questions[0];
-                        if (first) {
-                          setReportTargetQuestion(first);
-                          setIsReportDialogOpen(true);
-                        }
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <Flag className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Signaler</span>
-                    </Button>
-                    {user?.role === 'admin' && (
-                      <Button variant="outline" size="sm" className="text-destructive" disabled={isDeleting} onClick={handleDeleteGroup} title="Delete all">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </span>
+                  {showResults && evaluationComplete && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Appuyez sur Entrée pour continuer
+                    </div>
+                  )}
                 </div>
               );
             })()}

@@ -123,27 +123,34 @@ export function DailyLearningChart({ data, isLoading: extLoading=false, streak }
   }
 
   return (
-    <Card className="border-border/50 bg-white/50 dark:bg-muted/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3 flex-wrap text-2xl font-semibold">
+  <Card className="border-border/50 bg-white/50 dark:bg-muted/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all">
+      <CardHeader className="pb-3">
+    <CardTitle className="flex items-center gap-3 flex-wrap text-lg font-semibold tracking-tight">
           <span className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
             <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             Activité quotidienne
           </span>
           {showStreak>0 && (
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border ${streakIsCurrent? 'bg-orange-500/15 dark:bg-orange-400/15 text-orange-600 dark:text-orange-300 border-orange-500/30 dark:border-orange-400/30':'bg-slate-500/15 dark:bg-slate-400/10 text-slate-600 dark:text-slate-300 border-slate-500/30 dark:border-slate-400/30'}`}
-              title={streakIsCurrent? (maxStreak && maxStreak!==showStreak? `Série actuelle: ${showStreak} jours (max: ${maxStreak})`:`Série actuelle: ${showStreak} jours`):`Meilleure série: ${showStreak} jours`}>🔥 {showStreak}j</span>
+            <div className={`relative inline-flex items-center justify-center ${streakIsCurrent? 'animate-pulse':'opacity-75'}`}
+              title={streakIsCurrent? (maxStreak && maxStreak!==showStreak? `Série actuelle: ${showStreak} jours (max: ${maxStreak})`:`Série actuelle: ${showStreak} jours`):`Meilleure série: ${showStreak} jours`}>
+              {/* Fire emoji background */}
+              <span className="text-4xl select-none filter drop-shadow-lg">🔥</span>
+              {/* Streak number overlay */}
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-black drop-shadow-md">
+                {showStreak}
+              </span>
+            </div>
           )}
           <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">Moy: {avg.toFixed(1)}/j</span>
+          <div className="flex items-center gap-1">
+            {DAY_WINDOWS.map(d => (
+              <button key={d} onClick={()=>setDays(d)} className={`px-2 py-0.5 rounded text-[11px] font-medium border transition ${days===d? 'bg-blue-600 text-white border-blue-600 shadow-sm':'bg-transparent dark:text-slate-300 border-border/40 hover:bg-blue-500/10'}`}>{d}j</button>
+            ))}
+          </div>
         </CardTitle>
-  <div className="flex items-center gap-1 mt-2">
-          {DAY_WINDOWS.map(d => (
-            <button key={d} onClick={()=>setDays(d)} className={`px-2 py-0.5 rounded text-[11px] font-medium border transition ${days===d? 'bg-blue-600 text-white border-blue-600 shadow-sm':'bg-transparent dark:text-slate-300 border-border/40 hover:bg-blue-500/10'}`}>{d}j</button>
-          ))}
-        </div>
       </CardHeader>
-      <CardContent>
-        <div className="w-full h-[360px] relative" style={{ minWidth: '300px', minHeight: '360px' }}>
+      <CardContent className="pb-[2px]">
+        <div className="w-full h-[280px] relative" style={{ minWidth: '300px', minHeight: '280px' }}>
           {error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400">
               <span>Erreur: {error}</span>
@@ -151,8 +158,8 @@ export function DailyLearningChart({ data, isLoading: extLoading=false, streak }
             </div>
           )}
           {!error && chartData.length>0 && mounted && (
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={360}>
-              <BarChart data={chartData} key={days} margin={{ top: 20, right: 2, left: 2, bottom: 20 }} barCategoryGap="5%" barGap={0} width={800} height={360}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={280}>
+              <BarChart data={chartData} key={days} margin={{ top: 15, right: 2, left: 2, bottom: 15 }} barCategoryGap="5%" barGap={0} width={800} height={280}>
                 <XAxis dataKey="date" tick={<CustomTick />} axisLine={false} tickLine={false} interval={0} />
                 <YAxis tick={{ fontSize: 12, fill: 'currentColor' }} axisLine={false} tickLine={false} allowDecimals={false} domain={[0, maxVal===0? 4: Math.max(maxVal+1, Math.ceil(maxVal*1.05))]} />
                 <Tooltip content={<CustomTooltip />} cursor={{fill:'rgba(148,163,184,0.12)'}} wrapperStyle={{pointerEvents:'none'}} />

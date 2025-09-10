@@ -7,6 +7,7 @@ export interface ImageData {
   id: string;
   url: string;
   description: string;
+  width?: number; // Custom width in pixels (optional)
 }
 
 interface RichTextDisplayProps {
@@ -16,6 +17,7 @@ interface RichTextDisplayProps {
   images?: ImageData[];
   className?: string;
   enableImageZoom?: boolean; // Backward compatibility
+  style?: React.CSSProperties;
 }
 
 // Helper function to check if text contains inline images
@@ -43,7 +45,26 @@ export function generateImageId(): string {
   return 'img_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
 }
 
-export function RichTextDisplay({ content, text, images = [], className = "", enableImageZoom }: RichTextDisplayProps) {
+// Helper function to render text with line breaks
+function renderTextWithLineBreaks(text: string, keyPrefix: string): React.ReactNode[] {
+  if (!text) return [];
+  
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]) {
+      elements.push(<span key={`${keyPrefix}-line-${i}`}>{lines[i]}</span>);
+    }
+    if (i < lines.length - 1) {
+      elements.push(<br key={`${keyPrefix}-br-${i}`} />);
+    }
+  }
+  
+  return elements;
+}
+
+export function RichTextDisplay({ content, text, images = [], className = "", enableImageZoom, style }: RichTextDisplayProps) {
   // Use text prop for backward compatibility if content is not provided
   const displayContent = content ?? text;
   const processContent = (text?: string | null): React.ReactNode[] => {
@@ -70,7 +91,7 @@ export function RichTextDisplay({ content, text, images = [], className = "", en
       if (matchStart > lastIndex) {
         const textBefore = safeText.substring(lastIndex, matchStart);
         if (textBefore) {
-          parts.push(<span key={`text-${key++}`}>{textBefore}</span>);
+          parts.push(...renderTextWithLineBreaks(textBefore, `text-${key++}`));
         }
       }
 
@@ -113,20 +134,23 @@ export function RichTextDisplay({ content, text, images = [], className = "", en
       if (matchStart > lastIndex) {
         const textBefore = safeText.substring(lastIndex, matchStart);
         if (textBefore) {
-          parts.push(<span key={`text-${key++}`}>{textBefore}</span>);
+          parts.push(...renderTextWithLineBreaks(textBefore, `text-${key++}`));
         }
       }
 
       // Find the image data
       const imageData = images.find(img => img.id === imageId);
       if (imageData) {
+        const widthStyle = imageData.width ? `max-w-[${imageData.width}px]` : 'max-w-full';
         parts.push(
-          <ZoomableImage
-            key={`image-${key++}`}
-            src={imageData.url}
-            alt={imageData.description}
-            thumbnailClassName="inline-block max-w-full h-auto my-2"
-          />
+          <div key={`image-container-${key++}`} style={imageData.width ? { width: `${imageData.width}px` } : {}}>
+            <ZoomableImage
+              key={`image-${key++}`}
+              src={imageData.url}
+              alt={imageData.description}
+              thumbnailClassName={`inline-block ${widthStyle} h-auto my-2`}
+            />
+          </div>
         );
       } else {
         // If image not found, show a more subtle placeholder or skip it entirely
@@ -177,7 +201,7 @@ export function RichTextDisplay({ content, text, images = [], className = "", en
       if (matchStart > lastIndex) {
         const textBefore = text.substring(lastIndex, matchStart);
         if (textBefore) {
-          parts.push(<span key={`text-${key++}`}>{textBefore}</span>);
+          parts.push(...renderTextWithLineBreaks(textBefore, `text-${key++}`));
         }
       }
 
@@ -199,20 +223,20 @@ export function RichTextDisplay({ content, text, images = [], className = "", en
     if (lastIndex < text.length) {
       const remainingText = text.substring(lastIndex);
       if (remainingText) {
-        parts.push(<span key={`text-${key++}`}>{remainingText}</span>);
+        parts.push(...renderTextWithLineBreaks(remainingText, `text-${key++}`));
       }
     }
 
     // If no raw image URLs found, just return the original text
     if (parts.length === 0) {
-      return [<span key="text-0">{text}</span>];
+      return renderTextWithLineBreaks(text, 'text-0');
     }
 
     return parts;
   };
 
   return (
-    <div className={className}>
+    <div className={className} style={style}>
   {processContent(displayContent)}
     </div>
   );

@@ -108,12 +108,13 @@ export function EditSpecialtyDialog({
         ? (iconData.icon || getIconBySpecialtyName(name).name)
         : undefined;
       
-      const response = await fetch(`/api/specialties/${specialty.id}`, {
+      const response = await fetch('/api/specialties', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          id: specialty.id,
           name,
           description,
           icon: finalIcon,

@@ -151,10 +151,13 @@
 
   body { @apply bg-background text-foreground; }
 
-  /* Hide scrollbar */
-  ::-webkit-scrollbar { display: none; }
-  html { scrollbar-width: none; }
-  body { -ms-overflow-style: none; }
+  /* Allow normal page scrolling (previously globally disabled). For pages that must lock scroll (e.g. full-screen viewers), wrap content in an element with the .no-page-scroll class below instead of disabling it globally. */
+}
+
+/* Optional utility to disable page scroll for specific full-screen experiences */
+.no-page-scroll {
+  overflow: hidden;
+  height: 100vh;
 }
 
 /* PDF.js styles for dark mode support */
@@ -179,4 +182,117 @@
   .pdf-viewer-container {
     @apply bg-gray-100 dark:bg-gray-900 transition-colors;
   }
-}
+
+  /* Custom scrollbar for correction zone */
+  .correction-zone-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+  }
+  
+  .correction-zone-scroll::-webkit-scrollbar {
+    width: 6px;
+    display: block;
+  }
+  
+  .correction-zone-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .correction-zone-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
+  }
+  
+  .correction-zone-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(59, 130, 246, 0.5);
+  }
+  }
+
+  /* Force LTR text direction for all text inputs to prevent backward typing */
+  .force-ltr, 
+  .force-ltr textarea, 
+  .force-ltr input[type="text"], 
+  .force-ltr [contenteditable],
+  textarea.force-ltr,
+  input[type="text"].force-ltr,
+  [contenteditable].force-ltr {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: plaintext !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+  }
+
+  /* Aggressive LTR enforcement for comment inputs */
+  .comments-ltr-override *,
+  .comments-ltr-override textarea,
+  .comments-ltr-override input,
+  .comments-ltr-override [contenteditable] {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: embed !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  }
+
+  /* Browser-specific fixes */
+  @supports (-webkit-appearance: none) {
+    .force-ltr textarea {
+      -webkit-text-fill-color: inherit !important;
+      -webkit-opacity: 1 !important;
+      opacity: 1 !important;
+    }
+  }
+
+  /* Isolated edit comment containers */
+  .edit-comment-container {
+    isolation: isolate;
+    contain: layout style paint;
+    position: relative;
+    z-index: 1000;
+  }
+
+  .edit-comment-container * {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: plaintext !important;
+  }
+
+  .edit-comment-container [contenteditable] {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: plaintext !important;
+    writing-mode: horizontal-tb !important;
+  }
+
+  /* Ultra-specific edit input isolation */
+  .edit-input-isolation-layer {
+    isolation: isolate !important;
+    contain: layout style paint !important;
+    position: relative !important;
+    z-index: 999 !important;
+  }
+
+  .edit-input-isolation-layer *,
+  .edit-input-isolation-layer textarea,
+  .edit-input-isolation-layer [contenteditable],
+  .edit-input-isolation-layer input {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: plaintext !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    font-family: inherit !important;
+  }
+
+  .edit-input-isolation-layer::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    pointer-events: none;
+    z-index: -1;
+  }

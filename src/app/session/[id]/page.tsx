@@ -161,30 +161,55 @@ export default function SpecialtySessionsPage() {
                 ) : (
                   <>
                     {(specialty) && (() => {
-                      const iconData = specialty.icon ? getMedicalIcon(specialty.icon) : getIconBySpecialtyName(specialty.name);
-                      const IconComp = iconData.icon;
                       return (
-                        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-white/60 dark:bg-muted/40 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-white/60 dark:bg-muted/40 backdrop-blur-sm shadow-lg transition-all duration-300">
                           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-blue-400/40 via-blue-600/10 to-blue-400/40" />
                           
                           {/* Header section with gradient */}
                           <div className="bg-gradient-to-r from-blue-50/50 to-blue-100/40 dark:from-blue-900/40 dark:to-blue-800/30 border-b border-blue-100/50 dark:border-blue-800/50 p-6">
-                            <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg border-2 border-white/20">
-                                <IconComp className="w-8 h-8 text-white" />
-                              </div>
+                            <div className="flex">
                               <div className="flex-1 min-w-0">
-                                <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-2">{specialty.name}</h1>
-                                <div className="flex flex-wrap gap-2 items-center">
-                                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">
-                                    {specialty.sessions.length} session{specialty.sessions.length > 1 ? 's' : ''}
-                                  </Badge>
+                                <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100 ">{specialty.name}</h1>
+                                <div className="flex flex-wrap gap-2 items-center mb-6">
+                                  
                                   {specialty.semester && (
                                     <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-200/50 dark:border-blue-800/50">
                                       <Users className="h-3 w-3" /> Semestre {specialty.semester.order}
                                     </div>
                                   )}
                                 </div>
+                                {(() => {
+                                  const totalSessions = specialty.sessions.length;
+                                  const completedSessions = specialty.sessions.filter(s => !!s.pdfUrl).length; // heuristic
+                                  const progressPct = totalSessions === 0 ? 0 : Math.round((completedSessions / totalSessions) * 100);
+                                  return (
+                                    <>
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                                          <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{totalSessions}</div>
+                                          <div className="text-xs text-blue-600 dark:text-blue-400">Sessions totales</div>
+                                        </div>
+                                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                                          <div className="text-xl font-bold text-green-700 dark:text-green-300">{completedSessions}</div>
+                                          <div className="text-xs text-green-600 dark:text-green-400">Terminées</div>
+                                        </div>
+                                        <div className="bg-medblue-50 dark:bg-medblue-900/20 rounded-lg p-4">
+                                          <div className="text-xl font-bold text-medblue-700 dark:text-medblue-300">{progressPct}%</div>
+                                          <div className="text-xs text-medblue-600 dark:text-medblue-400">Progression</div>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="text-blue-700 dark:text-blue-300/80">Progression globale</span>
+                                          <span className="font-semibold text-blue-600 dark:text-blue-400">{progressPct}%</span>
+                                        </div>
+                                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                          <div className="absolute inset-y-0 left-0 bg-orange-500" style={{ width: `${progressPct}%` }} />
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>

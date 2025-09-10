@@ -10,6 +10,7 @@ interface DashboardStats {
   lastLecture?: {
     id: string;
     title: string;
+    specialtyId: string;
     specialty: {
       name: string;
     };

@@ -187,6 +187,7 @@ export type SessionCorrectionData = {
     headers: string[];
     rows: string[][];
     compareMode?: 'exact' | 'case-insensitive' | 'set';
+    type?: 'standard' | 'medical-qcm'; // Type to distinguish medical QCMs
   }[];
   texts: {
     id: string;
@@ -194,6 +195,29 @@ export type SessionCorrectionData = {
     reference: string;
     keywords?: string[];
     scoring?: { full: number; partial?: number };
+  }[];
+  medicalQuestions?: {
+    id: string;
+    questionNumber: string;
+    type: 'qcm' | 'qroc';
+    question: string;
+    options?: string[]; // For QCM: ['a) Option A', 'b) Option B', ...]
+    correctAnswers?: string[]; // For QCM: ['a', 'c'] or for QROC: ['answer text']
+    explanation?: string;
+  }[];
+  clinicalCases?: {
+    id: string;
+    title: string;
+    enonce: string; // Clinical scenario description
+    questions: {
+      id: string;
+      questionNumber: string;
+      type: 'qcm' | 'qroc';
+      question: string;
+      options?: string[]; // For QCM: ['a) Option A', 'b) Option B', ...]
+      correctAnswers?: string[]; // For QCM: ['a', 'c'] or for QROC: ['answer text']
+      explanation?: string;
+    }[];
   }[];
 };
 
@@ -213,6 +237,19 @@ export type SessionCorrectionSubmission = {
   answers: {
     tables: { id: string; rows: string[][] }[];
     texts: { id: string; answer: string }[];
+    medicalAnswers?: { 
+      questionId: string; 
+      selectedOptions?: string[]; // For QCM: ['a', 'c']
+      textAnswer?: string; // For QROC
+    }[];
+    clinicalCaseAnswers?: {
+      caseId: string;
+      questionAnswers: {
+        questionId: string;
+        selectedOptions?: string[]; // For QCM: ['a', 'c']
+        textAnswer?: string; // For QROC
+      }[];
+    }[];
   };
   score?: number;
   createdAt: string | Date;

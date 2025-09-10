@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { MessageSquare, Send, Loader2, UserRound, EyeOff, Heart, MoreHorizontal, Image as ImageIcon, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { RichTextInput } from '@/components/ui/rich-text-input';
 
 interface QuestionCommentsProps { questionId: string; }
 
@@ -19,6 +21,7 @@ type QComment = {
   parentCommentId?: string | null;
   replies?: QComment[];
   user: { id: string; name?: string | null; email: string; role: string };
+  imageUrls?: string[];
 };
 
 export function QuestionComments({ questionId }: QuestionCommentsProps) {
@@ -33,23 +36,56 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
   const [postAnonymous, setPostAnonymous] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [editImages, setEditImages] = useState<any[]>([]); // Images for editing
   const [replyParentId, setReplyParentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [replyImages, setReplyImages] = useState<any[]>([]); // Images for replies
   const [images, setImages] = useState<string[]>([]); // base64 or hosted URLs
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
-  const canPostRoot = !!ownerId && (text.trim().length > 0 || images.length > 0) && !submitting;
-  const canPostReply = !!ownerId && replyParentId && replyText.trim().length > 0 && !submitting;
+  // --- Text direction helpers: simply strip bidi control chars (no LRM insertion) ---
+  const stripControlChars = (val: string) => val.replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g, '');
+  const normalizeLTR = (val: string) => stripControlChars(val);
+  const displayText = (val: string) => stripControlChars(val);
 
-  const load = useMemo(() => async () => {
+  const canPostRoot = !!ownerId && (displayText(text).trim().length > 0 || images.length > 0) && !submitting;
+  const canPostReply = !!ownerId && replyParentId && (displayText(replyText).trim().length > 0 || replyImages.length > 0) && !submitting;
+
+  // Main comment input handlers
+  const handleMainInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    e.target.style.direction = 'ltr';
+    const value = normalizeLTR(e.target.value);
+    setText(value);
+    
+    // Force cursor to end to prevent backward behavior
+    setTimeout(() => {
+      const len = value.length;
+      e.target.setSelectionRange(len, len);
+      e.target.scrollTop = e.target.scrollHeight;
+    }, 0);
+  };
+
+  const handleMainInputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    e.target.style.direction = 'ltr';
+    e.target.style.textAlign = 'left';
+    e.target.style.unicodeBidi = 'plaintext';
+    
+    // Force cursor to end on focus
+    setTimeout(() => {
+      const len = e.target.value.length;
+      e.target.setSelectionRange(len, len);
+    }, 10);
+  };  const load = useMemo(() => async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/question-comments?questionId=${questionId}`);
       if (!res.ok) throw new Error('Failed');
-      const data: QComment[] = await res.json();
-      setComments(data || []);
+  const data: QComment[] = await res.json();
+  // Sanitize any stored control chars in loaded comments
+  const sanitized = (data || []).map(c => ({ ...c, content: stripControlChars(c.content || '') }));
+  setComments(sanitized);
     } catch {
       // silent
     } finally { setLoading(false); }
@@ -101,8 +137,9 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
       return; 
     }
     
-    const content = (parentId ? (contentOverride || replyText) : text).trim();
-    const imgs = imageList || (parentId ? [] : images);
+  const contentRaw = parentId ? (contentOverride || replyText) : text;
+  const content = displayText(contentRaw).trim();
+    const imgs = imageList || (parentId ? replyImages.map(img => img.url) : images);
     
     if (!content && imgs.length === 0) return;
     
@@ -122,12 +159,14 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
       });
       
       if (!res.ok) throw new Error('Failed');
-      const created: QComment = await res.json();
+  const created: QComment = await res.json();
+  created.content = stripControlChars(created.content || '');
       
       if (parentId) {
         setComments(prev => insertReply(prev, parentId, created));
         setReplyParentId(null);
         setReplyText('');
+        setReplyImages([]);
       } else {
         setComments(prev => [created, ...prev]);
         setText('');
@@ -140,20 +179,33 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
     }
   };
 
-  const beginEdit = (c: QComment) => { setEditingId(c.id); setEditText(c.content); };
-  const cancelEdit = () => { setEditingId(null); setEditText(''); };
+  const beginEdit = (c: QComment) => { 
+    setEditingId(c.id); 
+  setEditText(normalizeLTR(displayText(c.content)));
+    setEditImages(c.imageUrls?.map(url => ({ id: `edit-${Date.now()}-${Math.random()}`, url, description: 'Image' })) || []);
+  };
+  const cancelEdit = () => { 
+    setEditingId(null); 
+    setEditText(''); 
+    setEditImages([]);
+  };
   
   const saveEdit = async (id: string) => {
-    if (!editText.trim()) return;
+  if (!displayText(editText).trim() && editImages.length === 0) return;
     try {
+      const imageUrls = editImages.map(img => img.url);
       const res = await fetch(`/api/question-comments/${id}`, { 
         method: 'PUT', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ content: editText.trim() }) 
+        body: JSON.stringify({ 
+          content: displayText(editText).trim(),
+          imageUrls: imageUrls
+        }) 
       });
       if (!res.ok) throw new Error('Failed');
-      const updated: QComment = await res.json();
-      setComments(prev => updateNode(prev, id, () => updated));
+  const updated: QComment = await res.json();
+  updated.content = stripControlChars(updated.content || '');
+  setComments(prev => updateNode(prev, id, () => updated));
       cancelEdit();
     } catch { 
       toast({ title: 'Error', description: 'Failed to update comment', variant: 'destructive' }); 
@@ -174,6 +226,7 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
   const startReply = (id: string) => { 
     setReplyParentId(id); 
     setReplyText('');
+    setReplyImages([]);
   };
 
   const toggleReplies = (commentId: string) => {
@@ -191,6 +244,7 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
   const cancelReply = () => { 
     setReplyParentId(null); 
     setReplyText('');
+    setReplyImages([]);
   };
 
   // Helper to get user avatar/initials
@@ -218,17 +272,41 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
     return date.toLocaleDateString();
   };
 
-  // Facebook-style Reply Component
+  // Enhanced Reply Component with Image Support
   const ReplyComponent = ({ parentId, parentUserName }: { parentId: string; parentUserName: string }) => {
     const replyInputRef = useRef<HTMLTextAreaElement>(null);
     
     useEffect(() => {
       if (replyInputRef.current) {
         replyInputRef.current.focus();
+  replyInputRef.current.style.direction = 'ltr';
       }
     }, []);
 
-    const handleSubmitReply = () => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      e.target.style.direction = 'ltr';
+      const value = normalizeLTR(e.target.value);
+      setReplyText(value);
+      
+      // Force cursor to end to prevent backward behavior
+      setTimeout(() => {
+        const len = value.length;
+        e.target.setSelectionRange(len, len);
+        e.target.scrollTop = e.target.scrollHeight;
+      }, 0);
+    };
+
+    const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      e.target.style.direction = 'ltr';
+      e.target.style.textAlign = 'left';
+      e.target.style.unicodeBidi = 'plaintext';
+      
+      // Force cursor to end on focus
+      setTimeout(() => {
+        const len = e.target.value.length;
+        e.target.setSelectionRange(len, len);
+      }, 10);
+    };    const handleSubmitReply = () => {
       if (canPostReply) {
         add(parentId, replyText);
       }
@@ -251,20 +329,105 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
         {/* Threading line continuation */}
         <div className="absolute -left-8 top-0 w-3 h-5 border-l-2 border-b-2 border-gray-300 dark:border-gray-600 rounded-bl-lg"></div>
         
-        <div className="flex-1">
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 min-h-[36px] flex items-center">
-            <textarea
-              ref={replyInputRef}
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Reply to ${parentUserName}...`}
-              className="flex-1 bg-transparent border-none outline-none resize-none text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400"
-              style={{ minHeight: '20px', maxHeight: '120px' }}
-              rows={1}
-            />
+        <div className="flex-1 space-y-2">
+        <div className="comments-ltr-override bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 min-h-[36px] flex items-center">
+          <textarea
+            ref={replyInputRef}
+            value={replyText}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onKeyDown={handleKeyDown}
+            placeholder={`Reply to ${parentUserName}...`}
+            className="force-ltr flex-1 bg-transparent border-none outline-none resize-none text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            style={{ 
+              minHeight: '20px', 
+              maxHeight: '120px', 
+              direction: 'ltr !important', 
+              textAlign: 'left !important', 
+              unicodeBidi: 'plaintext !important',
+              writingMode: 'horizontal-tb !important',
+              textOrientation: 'mixed !important'
+            }}
+            rows={1}
+            dir="ltr"
+            lang="en"
+            autoCorrect="off"
+            autoCapitalize="none"
+            inputMode="text"
+            autoComplete="off"
+            spellCheck="false"
+          />
+        </div>          {/* Reply Image Previews */}
+          {replyImages.length > 0 && (
+            <div className="flex flex-wrap gap-2 pl-4">
+              {replyImages.map((img, i) => (
+                <div key={i} className="relative group">
+                  <img 
+                    src={img.url} 
+                    alt="preview" 
+                    className="h-12 w-12 object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setReplyImages(imgs => imgs.filter((_, idx) => idx !== i))}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-2 w-2" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Reply Actions */}
+          <div className="flex items-center justify-between pl-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                id={`reply-upload-${parentId}`}
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  
+                  const processFile = (file: File) => new Promise<any>((resolve, reject) => {
+                    if (file.size > 4 * 1024 * 1024) { // 4MB limit
+                      return reject(new Error('File too large (max 4MB)'));
+                    }
+                    const reader = new FileReader();
+                    reader.onerror = () => reject(reader.error);
+                    reader.onload = () => resolve({
+                      id: `reply-${Date.now()}-${Math.random()}`,
+                      url: reader.result as string,
+                      description: file.name
+                    });
+                    reader.readAsDataURL(file);
+                  });
+                  
+                  try {
+                    const results = await Promise.all(files.map(processFile));
+                    setReplyImages(prev => [...prev, ...results].slice(0, 4)); // Max 4 images
+                  } catch (err) {
+                    toast({ title: 'Error', description: 'Failed to process images', variant: 'destructive' });
+                  }
+                  
+                  e.target.value = '';
+                }}
+              />
+              
+              <label
+                htmlFor={`reply-upload-${parentId}`}
+                className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer"
+              >
+                <ImageIcon className="h-3 w-3" />
+                Photo
+              </label>
+            </div>
           </div>
         </div>
+        
         <Button
           size="sm"
           disabled={!canPostReply}
@@ -321,46 +484,88 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
                     </span>
                   )}
                 </div>
-                <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-                  {comment.content}
+                <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap" dir="ltr">
+                  {displayText(comment.content)}
                 </div>
                 
-                {/* Images */}
-                {Array.isArray((comment as any).imageUrls) && (comment as any).imageUrls.length > 0 && (
+                {/* Clickable Images */}
+                {comment.imageUrls && comment.imageUrls.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    {(comment as any).imageUrls.slice(0, 4).map((url: string, idx: number) => {
+                    {comment.imageUrls.slice(0, 4).map((url: string, idx: number) => {
                       if (url.startsWith('blob:')) return null;
                       return (
-                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block">
-                          <img 
-                            src={url} 
-                            alt="attachment" 
-                            className="w-full h-24 object-cover rounded-lg border"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        </a>
+                        <Dialog key={idx}>
+                          <DialogTrigger asChild>
+                            <div className="cursor-pointer group relative">
+                              <img 
+                                src={url} 
+                                alt="attachment" 
+                                className="w-full h-24 object-cover rounded-lg border group-hover:opacity-90 transition-opacity"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                                <div className="opacity-0 group-hover:opacity-100 bg-black bg-opacity-50 rounded-full p-2">
+                                  <ImageIcon className="h-4 w-4 text-white" />
+                                </div>
+                              </div>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                            <img 
+                              src={url} 
+                              alt="Full size image" 
+                              className="w-full h-auto max-h-[90vh] object-contain"
+                            />
+                          </DialogContent>
+                        </Dialog>
                       );
                     })}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none resize-none text-sm"
-                  rows={3}
-                  autoFocus
-                />
+              <div 
+                className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                }}
+                onFocus={(e) => {
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                }}
+                onInput={(e) => {
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
+                style={{ isolation: 'isolate', contain: 'layout style paint', zIndex: 1000 }}
+              >
+                <div className="edit-comment-container edit-input-isolation-layer" data-comment-id={comment.id}>
+                  <RichTextInput
+                    value={editText}
+                    onChange={(v) => {
+                      setEditText(normalizeLTR(v));
+                    }}
+                    images={editImages}
+                    onImagesChange={setEditImages}
+                    placeholder="Edit your comment..."
+                    useInlineImages={true}
+                    hidePreview={true}
+                    hideInstructions={true}
+                    className="bg-transparent border-none"
+                  />
+                </div>
                 <div className="flex gap-2 mt-2">
                   <Button size="sm" variant="outline" onClick={cancelEdit}>
                     Cancel
                   </Button>
-                  <Button size="sm" disabled={!editText.trim()} onClick={() => saveEdit(comment.id)}>
+                  <Button size="sm" disabled={!editText.trim() && editImages.length === 0} onClick={() => saveEdit(comment.id)}>
                     Save
                   </Button>
                 </div>
@@ -509,10 +714,11 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
 
                 {/* Input Area */}
                 <div className="flex-1">
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 min-h-[40px] flex items-center">
+                  <div className="comments-ltr-override bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 min-h-[40px] flex items-center">
                     <textarea
                       value={text}
-                      onChange={(e) => setText(e.target.value)}
+                      onChange={handleMainInputChange}
+                      onFocus={handleMainInputFocus}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -524,9 +730,24 @@ export function QuestionComments({ questionId }: QuestionCommentsProps) {
                         }
                       }}
                       placeholder="Write a comment..."
-                      className="flex-1 bg-transparent border-none outline-none resize-none text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                      style={{ minHeight: '24px', maxHeight: '120px' }}
+                      className="force-ltr flex-1 bg-transparent border-none outline-none resize-none text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                      style={{ 
+                        minHeight: '24px', 
+                        maxHeight: '120px', 
+                        direction: 'ltr !important', 
+                        textAlign: 'left !important', 
+                        unicodeBidi: 'plaintext !important',
+                        writingMode: 'horizontal-tb !important',
+                        textOrientation: 'mixed !important'
+                      }}
                       rows={1}
+                      dir="ltr"
+                      lang="en"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      inputMode="text"
+                      autoComplete="off"
+                      spellCheck="false"
                     />
                   </div>
                 </div>

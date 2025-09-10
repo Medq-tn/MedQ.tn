@@ -11,6 +11,7 @@ interface ContinueLearningProps {
   lastLecture?: {
     id: string;
     title: string;
+    specialtyId: string;
     specialty: { name: string };
     progress: number; // 0-100 number (already %)
     totalQuestions: number;
@@ -43,8 +44,8 @@ export function ContinueLearning({ lastLecture, isLoading = false }: ContinueLea
   if (!lastLecture) {
     return (
       <Card className="border-border/50 bg-white/50 dark:bg-muted/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 group">
-        <CardHeader className="pb-5">
-          <CardTitle className="flex items-center gap-2 text-2xl font-semibold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
             <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             {t('dashboard.continueLearning.title')}
           </CardTitle>
@@ -83,16 +84,16 @@ export function ContinueLearning({ lastLecture, isLoading = false }: ContinueLea
   // Main card
   return (
     <Card className="border-border/50 bg-white/50 dark:bg-muted/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <CardHeader className="pb-5">
-        <CardTitle className="flex items-center gap-2 text-2xl font-semibold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
           <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           {t('dashboard.continueLearning.title')}
         </CardTitle>
       </CardHeader>
   <CardContent className="pt-1 pb-5 flex flex-col gap-4 min-h-[210px]">
         {/* Title line with specialty badge */}
-        <div className="flex items-center gap-2 min-w-0">
-          <h3 className="flex-1 font-semibold text-2xl text-slate-800 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+        <div className="flex items-start gap-2 min-w-0">
+          <h3 className="flex-1 font-semibold text-lg tracking-tight text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight line-clamp-2">
             {lastLecture.title}
           </h3>
           <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-0 px-3 py-0.5 rounded-md text-xs font-medium shrink-0 max-w-[42%] truncate">
@@ -104,7 +105,7 @@ export function ContinueLearning({ lastLecture, isLoading = false }: ContinueLea
           {formatDate(lastLecture.lastAccessed)}
         </div>
         <div className="flex flex-col gap-1 mt-auto">
-          <span className="text-2xl font-bold leading-none tracking-tight bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
+          <span className="text-lg font-semibold leading-none tracking-tight bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
             {percent}%
           </span>
           <div className="flex items-center gap-4">
@@ -120,7 +121,7 @@ export function ContinueLearning({ lastLecture, isLoading = false }: ContinueLea
           </div>
         </div>
         {/* Continue button full width bottom */}
-        <Link href={`/lecture/${lastLecture.id}`} className="mt-3">
+        <Link href={`/matieres/${lastLecture.specialtyId}/cours/${lastLecture.id}`} className="mt-3">
           <Button className="w-full h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium flex items-center justify-center gap-2 shadow-sm">
             <Play className="h-4 w-4" />
             {t('dashboard.continueLearning.continue')}

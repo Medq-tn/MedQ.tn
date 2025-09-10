@@ -67,17 +67,17 @@ export const PerformancePie: React.FC = () => {
       <Card className="relative border border-border/50 bg-white/55 dark:bg-muted/30 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary/40 via-primary/10 to-primary/40" />
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-2xl font-semibold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
             <PieIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             Performance
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 flex flex-col items-center justify-center min-h-[420px] gap-6">
-          <div className="relative w-56 h-56">
+        <CardContent className="pt-0 flex flex-col items-center justify-center min-h-[350px] gap-4">
+          <div className="relative w-52 h-52">
             <div className="absolute inset-0 rounded-full bg-muted/40 animate-pulse" />
           </div>
           <div className="space-y-2 w-full max-w-xs">
-            {[1,2,3].map(i=> <div key={i} className="h-10 w-full rounded-xl bg-muted/40 animate-pulse" />)}
+            {[1,2,3].map(i=> <div key={i} className="h-8 w-full rounded-xl bg-muted/40 animate-pulse" />)}
           </div>
         </CardContent>
       </Card>
@@ -88,7 +88,7 @@ export const PerformancePie: React.FC = () => {
   return (
     <Card className="border-border/50 bg-white/50 dark:bg-muted/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 group">
       <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
-  <CardTitle className="flex items-center gap-2 text-2xl font-semibold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+  <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
           <PieIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           Performance
         </CardTitle>
@@ -110,27 +110,27 @@ export const PerformancePie: React.FC = () => {
         </div>
       </CardHeader>
       {/* Layout: chart (with center stats) + legend list */}
-      <CardContent className="flex-1 flex flex-col md:flex-row gap-10 md:gap-16 items-center md:items-center justify-center md:justify-start py-2">
+      <CardContent className="flex-1 flex flex-col md:flex-row gap-6 md:gap-12 items-center md:items-center justify-center md:justify-start py-2">
         {/* Donut chart or empty placeholder */}
-        <div className="relative" style={{width:240, height:240}}>
+        <div className="relative" style={{width:220, height:208}}>
           {loadingPerf && !perf ? (
             <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">Mise à jour...</div>
           ) : total === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
-              <div className="w-40 h-40 rounded-full border-4 border-dashed border-slate-200 dark:border-slate-600 flex items-center justify-center">
+              <div className="w-36 h-36 rounded-full border-4 border-dashed border-slate-200 dark:border-slate-600 flex items-center justify-center">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 px-2 leading-tight">Aucune donnée<br/>pour {timeframe}j</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[160px] leading-snug">Répondez à des questions pour voir vos statistiques.</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[150px] leading-snug">Répondez à des questions pour voir vos statistiques.</p>
             </div>
           ) : (
             <>
-              <PieChart width={240} height={240}>
+              <PieChart width={220} height={220}>
                 <Pie
                   data={data}
                   dataKey="value"
                   nameKey="label"
-                  innerRadius={80}
-                  outerRadius={110}
+                  innerRadius={70}
+                  outerRadius={95}
                   paddingAngle={2}
                   onMouseEnter={(_, idx) => setActiveIndex(idx)}
                   onMouseLeave={() => setActiveIndex(null)}
@@ -166,9 +166,9 @@ export const PerformancePie: React.FC = () => {
               </PieChart>
               {/* Center overlay when we have data */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent">{showPercent ? successPct + '%' : perf.correct}</span>
-                <span className="mt-1 text-[10px] tracking-wide text-muted-foreground uppercase">{showPercent ? 'Taux de réussite' : 'Justes'}</span>
-                <span className="mt-0.5 text-[10px] text-muted-foreground">{total} essais · {timeframe}j</span>
+                <span className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent">{showPercent ? successPct + '%' : perf.correct}</span>
+                <span className="mt-1 text-[9px] tracking-wide text-muted-foreground uppercase">{showPercent ? 'Taux de réussite' : 'Justes'}</span>
+                <span className="mt-0.5 text-[9px] text-muted-foreground">{total} essais · {timeframe}j</span>
               </div>
             </>
           )}

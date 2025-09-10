@@ -379,111 +379,49 @@ export function QuestionNotes({ questionId, onHasContentChange, autoEdit = false
     </div>
   );
 
-  // If no content and not editing, show the input mode
-  if (!hasContent && !isEditing) {
-    return (
-      <div className="mt-6">
-        <div className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-200/50 dark:border-gray-700/50 transform hover:scale-[1.01] hover:rotate-[0.3deg]">
-          {/* iOS Notes style header with improved gradient & title */}
-          <div className="h-14 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 dark:from-yellow-300 dark:via-yellow-400 dark:to-yellow-500 border-b border-yellow-400/40 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-transparent animate-pulse"></div>
-            <div className="absolute inset-0 opacity-[0.1] dark:opacity-[0.08] bg-[radial-gradient(circle_at_2px_2px,_rgba(0,0,0,0.25)_1px,_transparent_0)] bg-[length:12px_12px]"></div>
-            <div className="relative z-10 h-full flex items-center justify-between px-6">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-400 text-yellow-800 dark:text-yellow-900 grid place-items-center shadow-lg ring-2 ring-yellow-300/30">
-                  <StickyNote className="h-4.5 w-4.5" />
-                </div>
-                <span className="text-lg font-semibold text-gray-800 dark:text-gray-900/90 tracking-tight drop-shadow-sm">Mes Notes</span>
-              </div>
-              <div className="flex items-center gap-3">
-                {status}
-              </div>
-            </div>
-          </div>
-          
-          {/* Enhanced dotted line separator */}
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-red-400 to-transparent dark:via-red-500 shadow-sm"></div>
-          
-          {/* Content area with lines */}
-          <div className="bg-white dark:bg-gray-900 relative min-h-[180px]" style={{
-            backgroundImage: `
-              repeating-linear-gradient(
-                transparent,
-                transparent 31px,
-                rgb(59 130 246 / 0.12) 31px,
-                rgb(59 130 246 / 0.12) 32px
-              )
-            `,
-          }}>
-            {/* Enhanced red margin line with gradient */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-red-300 via-red-400 to-red-300 dark:from-red-400 dark:via-red-500 dark:to-red-400 opacity-70 shadow-sm"></div>
-            
-            {/* Enhanced paper texture */}
-            <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_1.5px_1.5px,_rgba(0,0,0,0.15)_1px,_transparent_0)] bg-[length:10px_10px]"></div>
-            
-            {/* Subtle vignette effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/[0.02] dark:to-white/[0.01] pointer-events-none"></div>
-            
-            <div className="pl-12 pr-6 pt-[13px] pb-6 relative z-10">
-              <RichTextInput
-                value={value}
-                onChange={setValue}
-                images={images}
-                onImagesChange={setImages}
-                placeholder="Tapez votre note ici…\nAjoutez des images avec la barre d'outils."
-                className={`min-h-[170px] bg-transparent border-none focus-within:ring-0 focus-within:border-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400/80 dark:placeholder:text-gray-500/70 ${handwritten.className} text-[18px] leading-[32px] tracking-[0.25px] selection:bg-yellow-200/60 dark:selection:bg-yellow-300/40 [&_p]:m-0 [&_div]:leading-[32px] [&_*]:leading-[32px]`}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // If there's content, show the card mode
+  // Always show the notebook-style interface
   return (
-    <div className="mt-6">
-      <div className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-200/50 dark:border-gray-700/50 transform hover:scale-[1.01] hover:rotate-[0.3deg]">
-        {/* iOS Notes style header with improved gradient & title */}
-        <div className="h-14 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 dark:from-yellow-300 dark:via-yellow-400 dark:to-yellow-500 border-b border-yellow-400/40 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent dark:via-transparent"></div>
-          <div className="absolute inset-0 opacity-[0.1] dark:opacity-[0.08] bg-[radial-gradient(circle_at_2px_2px,_rgba(0,0,0,0.25)_1px,_transparent_0)] bg-[length:12px_12px]"></div>
-          <div className="relative z-10 h-full flex items-center justify-between px-6">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-400 text-yellow-800 dark:text-yellow-900 grid place-items-center shadow-lg ring-2 ring-yellow-300/30">
-                <StickyNote className="h-4.5 w-4.5" />
-              </div>
-              <span className="text-lg font-semibold text-gray-800 dark:text-gray-900/90 tracking-tight drop-shadow-sm">Mes Notes</span>
+    <div className="mt-4">
+      <div className="rounded-lg overflow-hidden shadow-sm border border-gray-300 dark:border-gray-600">
+        {/* Notebook-style header - Enhanced with deeper colors */}
+        <div className="h-12 bg-gradient-to-r from-amber-200 to-yellow-200 border-b border-amber-400 relative shadow-sm">
+          {/* Spiral binding effect */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 shadow-sm"></div>
+          
+          <div className="h-full flex items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <StickyNote className="h-4 w-4 text-amber-900" />
+              <span className="text-sm font-semibold text-amber-950">Mes Notes</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {status}
               {!isEditing && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleEdit}
-                  className="h-8 px-3 text-gray-700 dark:text-gray-800 hover:bg-yellow-200/60 dark:hover:bg-yellow-400/40 hover:text-gray-800 dark:hover:text-gray-900 border border-transparent hover:border-yellow-300/60 dark:hover:border-yellow-500/60 transition-all duration-300 rounded-lg shadow-sm hover:shadow-md backdrop-blur-sm font-medium"
+                  className="h-7 px-2 text-xs text-amber-900 hover:bg-amber-300/70 transition-colors font-medium"
                 >
-                  <Edit3 className="h-3.5 w-3.5 mr-1.5" />
+                  <Edit3 className="h-3 w-3 mr-1" />
                   Modifier
                 </Button>
               )}
               {isEditing && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleCancelEdit}
-                    className="h-8 px-3 text-gray-700 dark:text-gray-800 hover:bg-yellow-200/60 dark:hover:bg-yellow-400/40 hover:text-gray-800 dark:hover:text-gray-900 border border-transparent hover:border-yellow-300/60 dark:hover:border-yellow-500/60 transition-all duration-300 rounded-lg shadow-sm hover:shadow-md backdrop-blur-sm font-medium"
+                    className="h-7 px-2 text-xs text-amber-900 hover:bg-amber-300/70 font-medium"
                   >
-                    <X className="h-3.5 w-3.5 mr-1.5" />
+                    <X className="h-3 w-3 mr-1" />
                     Annuler
                   </Button>
                   <Button
                     size="sm"
                     onClick={handleSaveEdit}
                     disabled={!initialLoaded || !hasChanges}
-                    className="h-8 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 dark:from-blue-500 dark:via-blue-600 dark:to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 dark:hover:from-blue-400 dark:hover:via-blue-500 dark:hover:to-blue-600 text-white dark:text-white border-0 shadow-lg hover:shadow-xl dark:shadow-blue-500/25 dark:hover:shadow-blue-400/30 transition-all duration-300 rounded-lg font-medium tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
                   >
                     Sauvegarder
                   </Button>
@@ -493,63 +431,70 @@ export function QuestionNotes({ questionId, onHasContentChange, autoEdit = false
           </div>
         </div>
         
-        {/* Enhanced dotted line separator */}
-        <div className="h-0.5 bg-gradient-to-r from-transparent via-red-400 to-transparent dark:via-red-500 shadow-sm"></div>
-        
-        {/* Content area with enhanced lines */}
-        <div className="bg-white dark:bg-gray-900 relative min-h-[220px]" style={{
-          backgroundImage: `
-            repeating-linear-gradient(
-              transparent,
-              transparent 31px,
-              rgb(59 130 246 / 0.12) 31px,
-              rgb(59 130 246 / 0.12) 32px
-            )
-          `,
-        }}>
-          {/* Enhanced red margin line with gradient */}
-          <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-red-300 via-red-400 to-red-300 dark:from-red-400 dark:via-red-500 dark:to-red-400 opacity-70 shadow-sm"></div>
+        {/* Lined paper content area */}
+        <div className="relative bg-yellow-50 dark:bg-slate-800 min-h-[200px] notebook-lines">
+          <style jsx>{`
+            .notebook-lines {
+              background-image: repeating-linear-gradient(
+                transparent,
+                transparent 23px,
+                rgba(203, 213, 225, 0.3) 23px,
+                rgba(203, 213, 225, 0.3) 24px
+              );
+            }
+            .dark .notebook-lines {
+              background-image: repeating-linear-gradient(
+                transparent,
+                transparent 23px,
+                rgba(71, 85, 105, 0.4) 23px,
+                rgba(71, 85, 105, 0.4) 24px
+              );
+            }
+          `}</style>
           
-          {/* Enhanced paper texture */}
-          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_1.5px_1.5px,_rgba(0,0,0,0.15)_1px,_transparent_0)] bg-[length:10px_10px]"></div>
+          {/* Red margin line */}
+          <div className="absolute left-12 top-0 bottom-0 w-px bg-red-400/60 dark:bg-red-500/70 z-10"></div>
           
-          {/* Subtle vignette effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/[0.02] dark:to-white/[0.01] pointer-events-none"></div>
-          
-          <div className="pl-12 pr-6 pt-[13px] pb-6 relative z-10">
-            {isEditing ? (
+          {/* Content with proper line alignment */}
+          <div className="pl-16 pr-6 py-6 relative z-20">
+            {isEditing || !hasContent ? (
               <>
                 <RichTextInput
                   value={value}
                   onChange={setValue}
                   images={images}
                   onImagesChange={setImages}
-                  placeholder="Tapez votre note ici…"
-                  className={`min-h-[200px] mb-6 bg-transparent border-none focus-within:ring-0 focus-within:border-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400/80 dark:placeholder:text-gray-500/70 ${handwritten.className} text-[18px] leading-[32px] tracking-[0.25px] selection:bg-yellow-200/60 dark:selection:bg-yellow-300/40 [&_p]:m-0 [&_div]:leading-[32px] [&_*]:leading-[32px]`}
+                  placeholder={hasContent ? "Tapez votre note ici…" : "Ajouter une note..."}
+                  className="min-h-[150px] mb-3 bg-transparent border-none focus-within:ring-0 focus-within:border-none text-base text-gray-800 dark:text-slate-200 placeholder:text-gray-500 dark:placeholder:text-slate-400 leading-6 [&_.ProseMirror]:outline-none [&_.ProseMirror]:border-none [&_.ProseMirror]:focus:ring-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:shadow-sm [&_img]:my-2"
+                  style={{ lineHeight: '24px' }}
+                  hidePreview={true}
+                  hideInstructions={true}
+                  useInlineImages={true}
                 />
-                <div className="flex items-center justify-start pt-5 border-t border-gray-200/60 dark:border-gray-700/60">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearNote}
-                    disabled={!initialLoaded || (!value && images.length === 0)}
-                    className="h-9 px-4 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50/80 dark:hover:bg-red-950/30 border border-transparent hover:border-red-200/60 dark:hover:border-red-800/60 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md backdrop-blur-sm"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Effacer
-                  </Button>
-                </div>
+                {hasContent && (
+                  <div className="flex items-center justify-start pt-3 border-t border-gray-300/50 dark:border-slate-600/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearNote}
+                      disabled={!initialLoaded || (!value && images.length === 0)}
+                      className="h-7 px-3 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Effacer
+                    </Button>
+                  </div>
+                )}
               </>
             ) : (
-              <div className="max-w-none">
-                <div className={`text-gray-800 dark:text-gray-200 relative ${handwritten.className} text-[18px] leading-[32px] tracking-[0.25px]`}>
-                  <RichTextDisplay
-                    content={value}
-                    images={images}
-                    enableImageZoom={true}
-                    className="text-[17px] leading-[32px] text-gray-800 dark:text-gray-200 [&_p]:m-0 [&_p]:leading-[32px] [&_ul]:m-0 [&_ol]:m-0 [&_li]:leading-[32px]"
-                  />
-                </div>
+              <div className="text-base text-gray-800 dark:text-slate-200 leading-6" style={{ lineHeight: '24px' }}>
+                <RichTextDisplay
+                  content={value}
+                  images={images}
+                  enableImageZoom={true}
+                  className="text-base text-gray-800 dark:text-slate-200 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:shadow-sm [&_img]:my-2 [&_img]:cursor-pointer"
+                  style={{ lineHeight: '24px' }}
+                />
               </div>
             )}
           </div>

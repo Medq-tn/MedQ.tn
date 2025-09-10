@@ -49,8 +49,10 @@ async function getHandler(request: AuthenticatedRequest) {
           select: {
             id: true,
             title: true,
+            specialtyId: true,
             specialty: {
               select: {
+                id: true,
                 name: true
               }
             }
@@ -62,11 +64,14 @@ async function getHandler(request: AuthenticatedRequest) {
       }
     });
 
-    // Calculate statistics
-    const totalQuestions = progressData.length;
-    const completedQuestions = progressData.filter(p => p.completed).length;
-    const averageScore = progressData.length > 0 
-      ? progressData.reduce((sum, p) => sum + (p.score || 0), 0) / progressData.length
+    // Filter out rows without a questionId for question-based stats
+    const questionProgress = progressData.filter(p => p.questionId);
+
+    // Calculate statistics (question-level)
+    const totalQuestions = questionProgress.length;
+    const completedQuestions = questionProgress.filter(p => p.completed).length;
+    const averageScore = questionProgress.length > 0 
+      ? questionProgress.reduce((sum, p) => sum + (p.score || 0), 0) / questionProgress.length
       : 0;
 
     // Calculate learning streak (consecutive days with activity)
@@ -90,8 +95,25 @@ async function getHandler(request: AuthenticatedRequest) {
     // Get total unique lectures
     const uniqueLectures = new Set(progressData.map(p => p.lectureId)).size;
 
-    // Get last accessed lecture
+    // Get last accessed lecture progress (group per lecture)
     const lastLecture = progressData.length > 0 ? progressData[0] : null;
+    let lastLecturePayload: any = null;
+    if (lastLecture) {
+      const lectureEntries = questionProgress.filter(p => p.lectureId === lastLecture.lectureId);
+      const lectureTotalQuestions = lectureEntries.length;
+      const lectureCompleted = lectureEntries.filter(p => p.completed).length;
+      const lectureProgressPct = lectureTotalQuestions === 0 ? 0 : Math.round((lectureCompleted / lectureTotalQuestions) * 100);
+      lastLecturePayload = {
+        id: lastLecture.lecture.id,
+        title: lastLecture.lecture.title,
+        specialtyId: lastLecture.lecture.specialtyId,
+        specialty: lastLecture.lecture.specialty,
+        progress: lectureProgressPct,
+        totalQuestions: lectureTotalQuestions,
+        completedQuestions: lectureCompleted,
+        lastAccessed: lastLecture.lastAccessed
+      };
+    }
 
     return NextResponse.json({
       averageScore: Math.round(averageScore * 10) / 10, // Round to 1 decimal
@@ -99,15 +121,7 @@ async function getHandler(request: AuthenticatedRequest) {
       completedQuestions,
       learningStreak,
       totalLectures: uniqueLectures,
-      lastLecture: lastLecture ? {
-        id: lastLecture.lecture.id,
-        title: lastLecture.lecture.title,
-        specialty: lastLecture.lecture.specialty,
-        progress: Math.round((completedQuestions / totalQuestions) * 100),
-        totalQuestions,
-        completedQuestions,
-        lastAccessed: lastLecture.lastAccessed
-      } : null
+  lastLecture: lastLecturePayload
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);

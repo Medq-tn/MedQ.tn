@@ -45,17 +45,17 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <ProfileCompletionGuard>
         <AppSidebarProvider>
-          <div className="flex min-h-screen w-full">
+          <div className="flex min-h-screen w-full max-h-screen overflow-hidden">
             <AppSidebar />
-            <SidebarInset className="flex-1 flex flex-col">
+            <SidebarInset className="flex-1 flex flex-col overflow-hidden">
               {/* Universal Header */}
               <UniversalHeader
                 title="Dashboard"
               />
 
-              {/* Main Content */}
-              <div className="flex-1 bg-gray-50 dark:bg-gray-900">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {/* Main Content (single natural scroll, no nested scroll area) */}
+              <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-6">
                   <div className="space-y-4 sm:space-y-6">
             {/* Upsell Banner for Free Users */}
             {shouldShowUpsell && (
@@ -74,6 +74,15 @@ export default function DashboardPage() {
                 </AlertDescription>
               </Alert>
             )}
+
+            {/* User Stats Row */}
+            <UserStats
+              averageScore={stats?.averageScore || 0}
+              totalQuestions={stats?.totalQuestions || 0}
+              learningStreak={stats?.learningStreak || 0}
+              totalLectures={stats?.totalLectures || 0}
+              isLoading={isLoading}
+            />
 
             {/* Main Dashboard Grid */}
             <div className="hidden xl:grid gap-6" style={{gridTemplateColumns: '330px 1fr'}}>

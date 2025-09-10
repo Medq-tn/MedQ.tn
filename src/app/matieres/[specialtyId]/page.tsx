@@ -274,11 +274,102 @@ export default function SpecialtyPageRoute() {
         <AppSidebarProvider>
           <AppSidebar />
           <SidebarInset className="flex-1 flex flex-col">
-            <UniversalHeader title="Chargement..." />
-            <div className="flex-1 bg-gray-50 dark:bg-gray-900 p-8">
-              <div className="animate-pulse space-y-4">
-                <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <UniversalHeader title="Chargement..." hideSeparator />
+            <div className="flex-1 bg-gray-50 dark:bg-gray-900 p-4 lg:p-6 overflow-hidden">
+              <div className="max-w-7xl mx-auto h-full flex flex-col gap-6">
+                {/* HEADER CARD */}
+                <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white/70 dark:bg-gray-800/60 backdrop-blur-sm p-5 lg:p-6 flex flex-col gap-6 animate-fade-in">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                    <div className="flex-1 space-y-4">
+                      <div className="h-7 w-48 sm:w-64 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-4">
+                        {[...Array(3)].map((_,i)=>(
+                          <div key={i} className="h-16 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="h-8 w-24 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse self-start" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">
+                      <span>Progression globale</span>
+                      <span className="h-3 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    </div>
+                    <div className="h-2 w-full rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 relative">
+                      <div className="absolute inset-y-0 left-0 w-1/4 bg-gray-300 dark:bg-gray-600 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* GROUP MANAGEMENT BAR */}
+                <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white/60 dark:bg-gray-800/50 backdrop-blur-sm px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 animate-pulse">
+                  <div className="h-5 w-56 sm:w-72 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="sm:ml-auto flex gap-3">
+                    <div className="h-9 w-32 sm:w-40 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </div>
+                </div>
+
+                {/* SEARCH + FILTERS ROW */}
+                <div className="flex flex-col md:flex-row gap-3 animate-pulse">
+                  <div className="h-11 flex-1 min-w-[240px] rounded-xl bg-white/70 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-800" />
+                  <div className="flex gap-3 md:ml-auto">
+                    <div className="h-11 w-28 sm:w-32 rounded-xl bg-white/70 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-800" />
+                    <div className="h-11 w-28 sm:w-32 rounded-xl bg-white/70 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-800" />
+                  </div>
+                </div>
+
+                {/* TABLE SKELETON */}
+                <div className="flex-1 rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white/70 dark:bg-gray-800/60 backdrop-blur-sm flex flex-col overflow-hidden">
+                  {/* Column headers */}
+                  <div className="hidden md:grid grid-cols-12 gap-4 px-4 lg:px-6 py-3 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <div className="col-span-4 h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded" />
+                    <div className="col-span-1 h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded" />
+                    <div className="col-span-1 h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded" />
+                    <div className="col-span-2 h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded" />
+                    <div className="col-span-2 h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded" />
+                    <div className="col-span-2 h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded" />
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scroll-thin divide-y divide-gray-100 dark:divide-gray-800">
+                    {[...Array(12)].map((_, i) => (
+                      <div key={i} className="grid grid-cols-12 items-center gap-3 sm:gap-4 px-4 lg:px-6 py-4 animate-pulse">
+                        {/* Course / title */}
+                        <div className="col-span-12 md:col-span-4 flex items-start gap-3">
+                          <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600 mt-1" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 w-40 sm:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
+                            <div className="h-3 w-32 sm:w-40 bg-gray-100 dark:bg-gray-600 rounded" />
+                          </div>
+                        </div>
+                        {/* Reports (hide on small) */}
+                        <div className="hidden md:flex col-span-1 items-center gap-2">
+                          <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                          <div className="h-4 w-5 bg-gray-200 dark:bg-gray-700 rounded" />
+                        </div>
+                        {/* Note */}
+                        <div className="hidden md:flex col-span-1">
+                          <div className="h-6 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
+                        </div>
+                        {/* Progress */}
+                        <div className="col-span-8 md:col-span-2 space-y-2">
+                          <div className="h-4 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+                          <div className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-600 overflow-hidden relative">
+                            <div className="absolute inset-y-0 left-0 w-1/3 bg-gray-300 dark:bg-gray-500" />
+                          </div>
+                        </div>
+                        {/* Comments */}
+                        <div className="hidden md:flex col-span-2 items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-gray-200 dark:bg-gray-700" />
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                        </div>
+                        {/* Action */}
+                        <div className="col-span-4 md:col-span-2 flex items-center gap-2 sm:gap-3 justify-end">
+                          <div className="h-8 w-20 sm:w-24 rounded-md bg-sky-200/50 dark:bg-sky-700/40" />
+                          <div className="h-8 w-8 rounded-md bg-gray-200 dark:bg-gray-700" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </SidebarInset>
@@ -401,34 +492,38 @@ export default function SpecialtyPageRoute() {
           <div className="flex-1 bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto space-y-6">
               {/* Breadcrumb */}
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push('/matieres')}
-                  className="flex items-center gap-1 px-2 py-1 h-auto hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  Matières
-                </Button>
-                <span>/</span>
-                <span className="text-gray-900 dark:text-gray-100 font-medium">{specialty.name}</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push('/matieres')}
+                    className="flex items-center gap-1 px-2 py-1 h-auto hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Matières
+                  </Button>
+                  <span>/</span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">{specialty.name}</span>
+                </div>
+                {isAdmin && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleEdit} 
+                    className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Modifier
+                  </Button>
+                )}
               </div>
 
               {/* Overview */}
               <Card className="bg-white dark:bg-gray-800 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{specialty.name}</h1>
-                        {isAdmin && (
-                          <Button variant="outline" size="sm" onClick={handleEdit} className="flex items-center gap-2">
-                            <Edit className="w-4 h-4" />
-                            Modifier
-                          </Button>
-                        )}
-                      </div>
                       {specialty.description && (
                         <p className="text-gray-600 dark:text-gray-400 mb-4">{specialty.description}</p>
                       )}
@@ -469,7 +564,7 @@ export default function SpecialtyPageRoute() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Gestion des groupes de cours</h3>
-                      <Button onClick={() => setIsGroupManagementOpen(!isGroupManagementOpen)} variant="outline" size="sm">
+                      <Button onClick={() => setIsGroupManagementOpen(!isGroupManagementOpen)} variant="outline" size="sm" className="bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors">
                         <Settings className="w-4 h-4 mr-2" />
                         {isGroupManagementOpen ? 'Masquer' : 'Gérer les groupes'}
                       </Button>
@@ -479,7 +574,7 @@ export default function SpecialtyPageRoute() {
                       <div className="space-y-4">
                         <div className="flex gap-2">
                           <Input placeholder="Nom du nouveau groupe..." value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="flex-1" />
-                          <Button onClick={createGroup} disabled={!newGroupName.trim()}>
+                          <Button onClick={createGroup} disabled={!newGroupName.trim()} className="bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             <Plus className="w-4 h-4 mr-2" />
                             Créer un groupe
                           </Button>
@@ -512,7 +607,7 @@ export default function SpecialtyPageRoute() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button variant="outline" className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors">
                       <Filter className="w-4 h-4" />
                       Filtrer
                     </Button>
@@ -526,7 +621,7 @@ export default function SpecialtyPageRoute() {
                 </DropdownMenu>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button variant="outline" className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors">
                       <ArrowUpDown className="w-4 h-4" />
                       {(() => {
                         if (sortOption === 'default') return 'Trier';
@@ -600,7 +695,7 @@ export default function SpecialtyPageRoute() {
                                   ))}
                                 </SelectContent>
                               </Select>
-                              <Button variant="ghost" size="sm" onClick={() => setSelectedCourseIds({})}>Effacer la sélection</Button>
+                              <Button variant="ghost" size="sm" onClick={() => setSelectedCourseIds({})} className="bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors">Effacer la sélection</Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -680,13 +775,13 @@ export default function SpecialtyPageRoute() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setCommentsLectureId(lecture.id)}
-                              className="group flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2"
+                              className="group flex items-center gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors px-3 py-2 rounded-lg"
                               aria-label="Voir les commentaires"
                             >
-                              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-500/15 group-hover:bg-blue-500/25 transition-colors">
-                                <MessageCircle className="w-6 h-6 text-blue-400 group-hover:text-blue-300" />
+                              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-300 dark:group-hover:bg-gray-600 transition-colors">
+                                <MessageCircle className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
                               </span>
-                              <span className="font-semibold text-base leading-none tabular-nums text-blue-300 group-hover:text-blue-200">{lecture.commentsCount ?? 0}</span>
+                              <span className="font-semibold text-sm leading-none tabular-nums">{lecture.commentsCount ?? 0}</span>
                             </Button>
                           </TableCell>
                           <TableCell>
@@ -705,7 +800,7 @@ export default function SpecialtyPageRoute() {
                                     aria-label="Changer le mode"
                                     variant="outline"
                                     size="icon"
-                                    className="h-8 w-8 rounded-md border-sky-200 text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                    className="h-8 w-8 rounded-md bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
                                   >
                                     <ChevronDown className="w-4 h-4" />
                                   </Button>
@@ -822,13 +917,13 @@ export default function SpecialtyPageRoute() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setCommentsLectureId(lecture.id)}
-                              className="group flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2"
+                              className="group flex items-center gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors px-3 py-2 rounded-lg"
                               aria-label="Voir les commentaires"
                             >
-                              <span className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-500/15 group-hover:bg-blue-500/25 transition-colors">
-                                <MessageCircle className="w-6 h-6 text-blue-400 group-hover:text-blue-300" />
+                              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-300 dark:group-hover:bg-gray-600 transition-colors">
+                                <MessageCircle className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
                               </span>
-                              <span className="font-semibold text-base leading-none tabular-nums text-blue-300 group-hover:text-blue-200">{lecture.commentsCount ?? 0}</span>
+                              <span className="font-semibold text-sm leading-none tabular-nums">{lecture.commentsCount ?? 0}</span>
                             </Button>
                           </TableCell>
                           <TableCell>
@@ -847,7 +942,7 @@ export default function SpecialtyPageRoute() {
                                     aria-label="Changer le mode"
                                     variant="outline"
                                     size="icon"
-                                    className="h-8 w-8 rounded-md border-sky-200 text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                    className="h-8 w-8 rounded-md bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
                                   >
                                     <ChevronDown className="w-4 h-4" />
                                   </Button>

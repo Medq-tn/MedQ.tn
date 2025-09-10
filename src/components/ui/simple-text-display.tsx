@@ -12,7 +12,7 @@ export function SimpleTextDisplay({ text }: SimpleTextDisplayProps) {
     .trim();
 
   return (
-    <div className="text-sm">
+    <div className=" text-sm sm:text-base leading-relaxed">
       {cleanText.split('\n').map((line, index) => (
         <p key={index} className="whitespace-pre-wrap">
           {line}
